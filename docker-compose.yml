@@ -1,0 +1,32 @@
+services:
+  db:
+    image: postgres:16
+    container_name: acta_db
+    restart: always
+    environment:
+      POSTGRES_DB: acta_manager
+      POSTGRES_USER: adminCEM2026
+      POSTGRES_PASSWORD: cem2024*
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U adminCEM2026 -d acta_manager"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build: .
+    container_name: acta_backend
+    ports:
+      - "4000:4000"
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
