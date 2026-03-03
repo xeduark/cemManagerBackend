@@ -3,6 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import actaRoutes from './routes/acta.routes.js';
 import userRoutes from './routes/user.routes.js';
+import cargosRoutes from './routes/jobTitle.routes.js';
 import swaggerUi from 'swagger-ui-express';
 import { swaggerSpec } from './docs/swagger.js';
 import listEndpoints from 'express-list-endpoints';
@@ -21,6 +22,7 @@ app.use(express.json());
 
 app.use('/api/actas', actaRoutes); // Rutas para actas
 app.use('/api/users', userRoutes); // Rutas para usuarios
+app.use('/api/cargos', cargosRoutes); // Rutas para cargos
 app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));// Documentación Swagger en /api/docs
 
 app.get('/', (_req, res) => {

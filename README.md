@@ -276,9 +276,31 @@ Al finalizar este paso, el proyecto:
 - el archivo .env y el docker -composer.yml deben tener las mismas credenciales.
 
 - ejecutar estos comandos para lanzar el backend con docker.
-
+- detener docker
+```bash
+docker compose down
+```
 ```bash
 docker compose up --build
+```
+
+---
+- ejecutar estos comandos para conocer tablas y nombre del docker con consola.
+
+```bash
+docker ps -a
+```
+
+---
+```bash
+docker exec -it NOMBRE DEL DOCKER psql -U USUARIO -d BASE DE DATOS
+```
+
+---
+
+Cuando salga acta_manager-#
+```bash
+\dt
 ```
 
 ---
@@ -396,6 +418,17 @@ npm start          # producción
 ## Notas finales
 
 - La carpeta `dist` **no se versiona**
+- TypeScript solo vive en `src`
+- El backend está listo para integrarse con frontend React/Vite
+
+---
+## Notas adicionales
+
+- Ver la `db`
+```bash
+ docker exec -it acta_db psql -U adminCEM2026 -d acta_manager
+ \d nombre_de_tu_tabla
+ ```
 - TypeScript solo vive en `src`
 - El backend está listo para integrarse con frontend React/Vite
 

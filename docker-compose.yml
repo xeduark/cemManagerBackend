@@ -24,9 +24,15 @@ services:
       - "4000:4000"
     env_file:
       - .env
+    volumes:
+      - .:/app
+      - /app/node_modules
+    command: npm run dev
     depends_on:
       db:
         condition: service_healthy
 
 volumes:
   postgres_data:
+    external: true
+    name: actamanagerbackend_postgres_data
