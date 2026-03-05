@@ -434,4 +434,163 @@ npm start          # producción
 
 ---
 
+# Arquitectura de Base de Datos – acta_manager
+
+## Descripción
+
+La base de datos **acta_manager** está diseñada para gestionar actas institucionales, usuarios del sistema, cargos organizacionales, áreas y sedes.
+
+El sistema utiliza **PostgreSQL** y sigue una estructura relacional normalizada combinada con almacenamiento flexible mediante **JSONB** para el contenido de las actas.
+
+---
+
+# Diagrama General de Relaciones
+
+```text
+areas
+│
+└── cargos
+│
+└── system_users
+│
+├── sede_id
+│
+└── actas (autor / creador)
+
+sedes
+│
+└── system_users
+```
+
+
+---
+
+# Tablas del Sistema
+
+## 1. sedes
+
+Almacena las sedes institucionales donde se encuentran los usuarios.
+
+| Campo | Tipo | Descripción |
+|-----|-----|-------------|
+| id | integer (PK) | Identificador único |
+| nombre | varchar(150) | Nombre de la sede |
+| direccion | text | Dirección física |
+| ciudad | varchar(100) | Ciudad |
+| codigo | varchar(10) | Código interno |
+| activo | boolean | Estado de la sede |
+| created_at | timestamp | Fecha de creación |
+
+Relación:
+
+
+---
+
+## 2. areas
+
+Define las áreas o departamentos dentro de la organización.
+
+| Campo | Tipo | Descripción |
+|-----|-----|-------------|
+| id | integer (PK) | Identificador |
+| nombre | varchar(100) | Nombre del área |
+| activo | boolean | Estado |
+
+
+ codigo |      nombre
+--------+------------------
+ 4110   | Consulta Externa
+ 4111   | Proyectos
+ 4115   | Hospitalización
+ 5105   | Administración
+Relación:
+
+
+---
+
+## 3. cargos
+
+Representa los cargos organizacionales asociados a un área.
+
+| Campo | Tipo | Descripción |
+|-----|-----|-------------|
+| id | integer (PK) | Identificador |
+| nombre | varchar(100) | Nombre del cargo |
+| activo | boolean | Estado |
+| area_id | integer (FK) | Área a la que pertenece |
+
+Relación:
+
+
+---
+
+## 4. system_users
+
+Contiene los usuarios registrados en el sistema.
+
+| Campo | Tipo | Descripción |
+|-----|-----|-------------|
+| id | integer (PK) | Identificador |
+| nombre | varchar(150) | Nombre del usuario |
+| dni | varchar(20) | Documento único |
+| activo | boolean | Estado del usuario |
+| created_at | timestamp | Fecha de creación |
+| sede_id | integer (FK) | Sede del usuario |
+| cargo_id | integer | Cargo del usuario |
+
+Relaciones:
+
+---
+
+## 5. actas
+
+Tabla principal donde se almacenan las actas del sistema.
+
+| Campo | Tipo | Descripción |
+|-----|-----|-------------|
+| id | integer (PK) | Identificador |
+| acta_number | integer | Número único del acta |
+| payload | jsonb | Contenido del acta |
+| estado | varchar(20) | Estado del acta (BORRADOR / CERRADA) |
+| created_at | timestamp | Fecha de creación |
+| updated_at | timestamp | Fecha de actualización |
+| closed_at | timestamp | Fecha de cierre |
+
+Índices:
+
+
+---
+
+# Uso de JSONB en actas
+
+El campo **payload** permite almacenar información estructurada flexible dentro del acta.
+
+Ejemplo:
+
+```json
+{
+  "titulo": "Acta reunión administrativa",
+  "fecha": "2026-02-10",
+  "asistentes": [
+    "Director",
+    "Secretaria"
+  ],
+  "temas": [
+    "Presupuesto",
+    "Planeación académica"
+  ]
+}
+
+#Posibles Mejoras Futuras
+
+-Relación entre actas y usuarios (autor del acta)
+
+-Índices adicionales para búsquedas en JSONB
+
+-Sistema de auditoría de cambios
+
+-Control de versiones de actas
+
+-Sistema de firmas digitales
+
 ✅ Backend Acta Manager listo para escalar
