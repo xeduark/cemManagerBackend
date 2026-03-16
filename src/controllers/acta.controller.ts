@@ -12,7 +12,7 @@ export const createActa = async (req: Request, res: Response) => {
     const acta = await ActaService.createActa(payload);
 
     res.status(201).json(acta);
-  } catch (error) {
+  } catch (error: any) {
     console.error(error);
     res.status(500).json({ message: 'Error creando el acta' });
   }
@@ -25,7 +25,7 @@ export const getActas = async (_req: Request, res: Response) => {
   try {
     const actas = await ActaService.getAllActas();
     res.json(actas);
-  } catch (error) {
+  } catch (error: any) {
     console.error(error);
     res.status(500).json({ message: 'Error obteniendo actas' });
   }
@@ -49,7 +49,7 @@ export const getActaById = async (req: Request, res: Response) => {
     }
 
     res.json(acta);
-  } catch (error) {
+  } catch (error: any) {
     console.error(error);
     res.status(500).json({ message: 'Error obteniendo el acta' });
   }
@@ -76,7 +76,7 @@ export const updateActa = async (req: Request, res: Response) => {
     }
 
     res.json(acta);
-  } catch (error) {
+  } catch (error: any) {
     console.error(error);
     res.status(500).json({ message: 'Error actualizando el acta' });
   }
@@ -105,3 +105,5 @@ export const closeActa = async (req: Request, res: Response) => {
     res.status(500).json({ message: 'Error cerrando el acta' });
   }
 };
+
+

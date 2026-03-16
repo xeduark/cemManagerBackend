@@ -1,6 +1,6 @@
 export interface Acta {
   id: number;
-  acta_number: number;
+  acta_number: string; // ACT-0001, ACT-0002, etc.
   fecha: string;
 
   nombre: string;

@@ -12,16 +12,17 @@ export interface ActaDB {
 }
 
 /**
- * Crear una nueva acta (estado BORRADOR)
+ * Crear una nueva acta 
  */
 export const createActa = async (
   payload: ActaPayload
 ): Promise<ActaDB> => {
+
   const result = await pool.query(
     `
     INSERT INTO actas (acta_number, payload, estado)
     VALUES (
-      (SELECT COALESCE(MAX(acta_number), 0) + 1 FROM actas),
+      'ACT-' || LPAD(nextval('acta_number_seq')::text, 4, '0'),
       $1,
       'BORRADOR'
     )
