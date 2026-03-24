@@ -1,4 +1,5 @@
-import { Request, Response } from 'express';
+import { query, Request, Response } from 'express';
+import { pool } from '../db.js';
 import * as ActaService from '../services/acta.service.js';
 import { ActaPayload } from '../types/acta.types.js';
 
@@ -28,6 +29,34 @@ export const getActas = async (_req: Request, res: Response) => {
   } catch (error: any) {
     console.error(error);
     res.status(500).json({ message: 'Error obteniendo actas' });
+  }
+};
+
+// GET /actas/latest - Obtener las últimas N actas (ordenadas por fecha)
+export const getLatestActasController = async (req: Request, res: Response) => {
+  try {
+    const limit = Number(req.query.limit) || 10;
+    const actas = await ActaService.getLatestActas(limit);
+    res.json(actas);
+  } catch (error: any) {
+    console.error(error);
+    res.status(500).json({ error: 'Error obteniendo últimas actas' });
+  }
+};
+
+// GET /actas/search - Buscar actas por número, nombre, cargo, sede, equipo o marca
+export const searchActasController = async (req: Request, res: Response) => {
+  try {
+    const q = req.query.q as string;
+
+    if (!q) return res.json([]);
+
+    const actas = await ActaService.searchActas(q);
+
+    res.json(actas);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Error buscando actas' });
   }
 };
 
@@ -106,4 +135,30 @@ export const closeActa = async (req: Request, res: Response) => {
   }
 };
 
+// GET /diadema-marcas - Obtener todas las marcas de diademas
+export const getDiademaMarcasController = async (_req: Request, res: Response) => {
+  try {
+    const marcas = await ActaService.getDiademaMarcas();
+    res.json(marcas);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Error obteniendo marcas' });
+  }
+};
+
+
+// GET /actas/paginated?page=1&limit=10 - Obtener actas paginadas
+export const getActasPaginatedController = async (req: Request, res: Response) => {
+  try {
+    const page = Number(req.query.page) || 1;
+    const limit = Math.min(Number(req.query.limit) || 10, 50);
+
+    const result = await ActaService.getActasPaginated(page, limit);
+
+    res.json(result);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Error obteniendo actas paginadas' });
+  }
+};
 

@@ -4,9 +4,12 @@ import {
   getActas,
   getActaById,
   updateActa,
-  closeActa
+  closeActa,
+  getLatestActasController,
+  searchActasController,
+  getDiademaMarcasController,
+  getActasPaginatedController
 } from '../controllers/acta.controller.js';
-
 const router = Router();
 
 /**
@@ -20,7 +23,18 @@ router.post('/', createActa);
 router.get('/', getActas);
 
 /**
- * Obtener acta por ID (preview / edición)
+ *  Rutas especiales PRIMERO
+ */
+
+/**limite de registros */
+router.get('/latest', getLatestActasController);
+/** paginación */
+router.get('/paginated', getActasPaginatedController);
+router.get('/search', searchActasController);
+router.get('/diadema-marcas', getDiademaMarcasController);
+
+/**
+ * Obtener acta por ID (SIEMPRE AL FINAL)
  */
 router.get('/:id', getActaById);
 
@@ -33,5 +47,6 @@ router.put('/:id', updateActa);
  * Cerrar acta (ya no editable)
  */
 router.post('/:id/close', closeActa);
+
 
 export default router;
