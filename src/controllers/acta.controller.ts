@@ -44,21 +44,7 @@ export const getLatestActasController = async (req: Request, res: Response) => {
   }
 };
 
-// GET /actas/search - Buscar actas por número, nombre, cargo, sede, equipo o marca
-export const searchActasController = async (req: Request, res: Response) => {
-  try {
-    const q = req.query.q as string;
 
-    if (!q) return res.json([]);
-
-    const actas = await ActaService.searchActas(q);
-
-    res.json(actas);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Error buscando actas' });
-  }
-};
 
 /**
  * Obtener acta por ID (previsualización / edición)
@@ -146,19 +132,21 @@ export const getDiademaMarcasController = async (_req: Request, res: Response) =
   }
 };
 
-
-// GET /actas/paginated?page=1&limit=10 - Obtener actas paginadas
-export const getActasPaginatedController = async (req: Request, res: Response) => {
+export const getActasController = async (req: Request, res: Response) => {
   try {
-    const page = Number(req.query.page) || 1;
-    const limit = Math.min(Number(req.query.limit) || 10, 50);
+    const { page = 1, limit = 10, search = "" } = req.query;
 
-    const result = await ActaService.getActasPaginated(page, limit);
+    const result = await ActaService.getActasPaginated(
+      Number(page),
+      Number(limit),
+      String(search)
+    );
 
     res.json(result);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Error obteniendo actas paginadas' });
+    res.status(500).json({ message: "Error obteniendo actas" });
   }
 };
+
 

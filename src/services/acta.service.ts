@@ -144,24 +144,6 @@ export const getLatestActas = async (limit: number = 10) => {
   return result.rows;
 };
 
-// Búsqueda de actas por nombre, recibidoPorNombre o número de acta (con paginación básica)
-export const searchActas = async (query: string) => {
-  const result = await pool.query(
-    `
-    SELECT *
-    FROM actas
-    WHERE 
-      payload->>'nombre' ILIKE $1 OR
-      payload->>'recibidoPorNombre' ILIKE $1 OR
-      acta_number ILIKE $1
-    ORDER BY created_at DESC
-    LIMIT 20
-    `,
-    [`%${query}%`]
-  );
-
-  return result.rows;
-};
 
 // Obtener marca de diadema por ID (para mostrar en el acta)
 export const getDiademaMarcaById = async (id: number) => {
@@ -184,29 +166,47 @@ export const getDiademaMarcas = async () => {
   return result.rows;
 };
 
-// Obtener actas con paginación (para listado principal) y permitir un límite dinámico vía query param
-export const getActasPaginated = async (page: number = 1, limit: number = 10) => {
+// Búsqueda avanzada con paginación
+export const getActasPaginated = async (
+  page: number = 1,
+  limit: number = 10,
+  search: string = ""
+) => {
   const offset = (page - 1) * limit;
+  const searchQuery = `%${search}%`;
 
-  const data = await pool.query(
-    `
+  const dataQuery = `
     SELECT *
     FROM actas
+    WHERE 
+      ($1 = '' OR 
+        payload->>'nombre' ILIKE $1 OR
+        payload->>'recibidoPorNombre' ILIKE $1 OR
+        acta_number::text ILIKE $1
+      )
     ORDER BY created_at DESC
-    LIMIT $1 OFFSET $2
-    `,
-    [limit, offset]
-  );
+    LIMIT $2 OFFSET $3
+  `;
 
-  const total = await pool.query(`
-    SELECT COUNT(*) FROM actas
-  `);
+  const countQuery = `
+    SELECT COUNT(*)
+    FROM actas
+    WHERE 
+      ($1 = '' OR 
+        payload->>'nombre' ILIKE $1 OR
+        payload->>'recibidoPorNombre' ILIKE $1 OR
+        acta_number::text ILIKE $1
+      )
+  `;
+
+  const data = await pool.query(dataQuery, [searchQuery, limit, offset]);
+  const total = await pool.query(countQuery, [searchQuery]);
 
   return {
     data: data.rows,
     total: Number(total.rows[0].count),
     page,
     limit,
-    totalPages: Math.ceil(Number(total.rows[0].count) / limit)
+    totalPages: Math.ceil(Number(total.rows[0].count) / limit),
   };
 };

@@ -1,15 +1,14 @@
 import { Router } from 'express';
 import {
   createActa,
-  getActas,
+  getActasController,
   getActaById,
   updateActa,
   closeActa,
   getLatestActasController,
-  searchActasController,
   getDiademaMarcasController,
-  getActasPaginatedController
 } from '../controllers/acta.controller.js';
+
 const router = Router();
 
 /**
@@ -18,19 +17,18 @@ const router = Router();
 router.post('/', createActa);
 
 /**
- * Obtener todas las actas
+ * 🔥 PRINCIPAL → paginación + search + limit
  */
-router.get('/', getActas);
+router.get('/', getActasController);
 
 /**
- *  Rutas especiales PRIMERO
+ * 🔥 SOLO últimas N actas (rápido)
  */
-
-/**limite de registros */
 router.get('/latest', getLatestActasController);
-/** paginación */
-router.get('/paginated', getActasPaginatedController);
-router.get('/search', searchActasController);
+
+/**
+ * Otros endpoints
+ */
 router.get('/diadema-marcas', getDiademaMarcasController);
 
 /**
@@ -44,9 +42,8 @@ router.get('/:id', getActaById);
 router.put('/:id', updateActa);
 
 /**
- * Cerrar acta (ya no editable)
+ * Cerrar acta
  */
 router.post('/:id/close', closeActa);
-
 
 export default router;
