@@ -1,45 +1,53 @@
-import { pool } from '../db.js';
-import { ActaPayload } from '../types/acta.types.js';
+import { pool } from "../db.js";
+import { ActaPayload } from "../types/acta.types.js";
 
 export interface ActaDB {
   id: number;
   acta_number: number;
   payload: ActaPayload;
-  estado: 'BORRADOR' | 'CERRADA';
+  estado: "BORRADOR" | "CERRADA";
   created_at: string;
   updated_at: string;
   closed_at: string | null;
 }
 
 /**
- * Crear una nueva acta 
+ * Crear una nueva acta
  */
 export const createActa = async (
-  payload: ActaPayload
+  payload: ActaPayload,
+  diademaMarcaId?: number,
+  diademaSerial?: string
 ): Promise<ActaDB> => {
 
-  //validacion de diademas por id
-  if (payload.diadema_marca_id) {
-    const marca = await getDiademaMarcaById(payload.diadema_marca_id);
+  //  validar correctamente la marca de diadema si se proporciona (para evitar referencias a marcas inexistentes)
+  if (diademaMarcaId) {
+    const marca = await getDiademaMarcaById(diademaMarcaId);
 
     if (!marca) {
-      throw new Error('La marca de diadema no existe');
+      throw new Error("La marca de diadema no existe");
     }
   }
 
-
   const result = await pool.query(
     `
-    INSERT INTO actas (acta_number, payload, estado, diadema_marca_id)
+    INSERT INTO actas (
+      acta_number,
+      payload,
+      estado,
+      diadema_marca_id,
+      diadema_serial
+    )
     VALUES (
       'ACT-' || LPAD(nextval('acta_number_seq')::text, 4, '0'),
       $1,
       'BORRADOR',
-      $2
+      $2,
+      $3
     )
     RETURNING *
     `,
-    [payload, payload.diadema_marca_id]
+    [payload, diademaMarcaId, diademaSerial]
   );
 
   return result.rows[0];
@@ -48,16 +56,14 @@ export const createActa = async (
 /**
  * Obtener un acta por ID (preview / edición)
  */
-export const getActaById = async (
-  id: number
-): Promise<ActaDB | null> => {
+export const getActaById = async (id: number): Promise<ActaDB | null> => {
   const result = await pool.query(
     `
     SELECT *
     FROM actas
     WHERE id = $1
     `,
-    [id]
+    [id],
   );
 
   return result.rows[0] ?? null;
@@ -68,12 +74,13 @@ export const getActaById = async (
  */
 export const updateActa = async (
   id: number,
-  payload: ActaPayload
+  payload: ActaPayload,
+  diademaMarcaId?: number,
+  diademaSerial?: string
 ): Promise<ActaDB | null> => {
 
-  //validacion de diademas por id
-  if (payload.diadema_marca_id) {
-    const marca = await getDiademaMarcaById(payload.diadema_marca_id);
+  if (diademaMarcaId) {
+    const marca = await getDiademaMarcaById(diademaMarcaId);
 
     if (!marca) {
       throw new Error('La marca de diadema no existe');
@@ -84,13 +91,14 @@ export const updateActa = async (
     `
     UPDATE actas
     SET payload = $1,
-          diadema_marca_id = $3,
+        diadema_marca_id = $2,
+        diadema_serial = $3,
         updated_at = NOW()
-    WHERE id = $2
+    WHERE id = $4
       AND estado = 'BORRADOR'
     RETURNING *
     `,
-    [payload, id, payload.diadema_marca_id]
+    [payload, diademaMarcaId, diademaSerial, id]
   );
 
   return result.rows[0] ?? null;
@@ -99,9 +107,7 @@ export const updateActa = async (
 /**
  * Cerrar acta (ya no editable)
  */
-export const closeActa = async (
-  id: number
-): Promise<ActaDB | null> => {
+export const closeActa = async (id: number): Promise<ActaDB | null> => {
   const result = await pool.query(
     `
     UPDATE actas
@@ -110,7 +116,7 @@ export const closeActa = async (
     WHERE id = $1
     RETURNING *
     `,
-    [id]
+    [id],
   );
 
   return result.rows[0] ?? null;
@@ -138,18 +144,17 @@ export const getLatestActas = async (limit: number = 10) => {
     ORDER BY created_at DESC
     LIMIT $1
     `,
-    [limit]
+    [limit],
   );
 
   return result.rows;
 };
 
-
 // Obtener marca de diadema por ID (para mostrar en el acta)
 export const getDiademaMarcaById = async (id: number) => {
   const result = await pool.query(
     `SELECT * FROM diadema_marcas WHERE id = $1`,
-    [id]
+    [id],
   );
 
   return result.rows[0] ?? null;
@@ -170,7 +175,7 @@ export const getDiademaMarcas = async () => {
 export const getActasPaginated = async (
   page: number = 1,
   limit: number = 10,
-  search: string = ""
+  search: string = "",
 ) => {
   const offset = (page - 1) * limit;
   const searchQuery = `%${search}%`;

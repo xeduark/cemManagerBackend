@@ -1,21 +1,25 @@
-import { query, Request, Response } from 'express';
-import { pool } from '../db.js';
-import * as ActaService from '../services/acta.service.js';
-import { ActaPayload } from '../types/acta.types.js';
+import { query, Request, Response } from "express";
+import { pool } from "../db.js";
+import * as ActaService from "../services/acta.service.js";
+import { ActaPayload } from "../types/acta.types.js";
 
 /**
  * Crear una nueva acta (BORRADOR)
  */
 export const createActa = async (req: Request, res: Response) => {
   try {
-    const payload: ActaPayload = req.body;
+    const { diadema_marca_id, diadema_serial, ...payload } = req.body;
 
-    const acta = await ActaService.createActa(payload);
+    const acta = await ActaService.createActa(
+      payload,
+      diadema_marca_id,
+      diadema_serial,
+    );
 
     res.status(201).json(acta);
   } catch (error: any) {
     console.error(error);
-    res.status(500).json({ message: 'Error creando el acta' });
+    res.status(500).json({ message: "Error creando el acta" });
   }
 };
 
@@ -28,7 +32,7 @@ export const getActas = async (_req: Request, res: Response) => {
     res.json(actas);
   } catch (error: any) {
     console.error(error);
-    res.status(500).json({ message: 'Error obteniendo actas' });
+    res.status(500).json({ message: "Error obteniendo actas" });
   }
 };
 
@@ -40,11 +44,9 @@ export const getLatestActasController = async (req: Request, res: Response) => {
     res.json(actas);
   } catch (error: any) {
     console.error(error);
-    res.status(500).json({ error: 'Error obteniendo últimas actas' });
+    res.status(500).json({ error: "Error obteniendo últimas actas" });
   }
 };
-
-
 
 /**
  * Obtener acta por ID (previsualización / edición)
@@ -54,19 +56,19 @@ export const getActaById = async (req: Request, res: Response) => {
     const id = Number(req.params.id);
 
     if (isNaN(id)) {
-      return res.status(400).json({ message: 'ID inválido' });
+      return res.status(400).json({ message: "ID inválido" });
     }
 
     const acta = await ActaService.getActaById(id);
 
     if (!acta) {
-      return res.status(404).json({ message: 'Acta no encontrada' });
+      return res.status(404).json({ message: "Acta no encontrada" });
     }
 
     res.json(acta);
   } catch (error: any) {
     console.error(error);
-    res.status(500).json({ message: 'Error obteniendo el acta' });
+    res.status(500).json({ message: "Error obteniendo el acta" });
   }
 };
 
@@ -76,24 +78,36 @@ export const getActaById = async (req: Request, res: Response) => {
 export const updateActa = async (req: Request, res: Response) => {
   try {
     const id = Number(req.params.id);
-    const payload: ActaPayload = req.body;
 
     if (isNaN(id)) {
-      return res.status(400).json({ message: 'ID inválido' });
+      return res.status(400).json({ message: "ID inválido" });
     }
 
-    const acta = await ActaService.updateActa(id, payload);
+    // 👇 AGREGA ESTO
+    console.log("BODY COMPLETO:", req.body);
+
+    const { diadema_marca_id, diadema_serial, ...payload } = req.body;
+
+    // 👇 Y ESTO
+    console.log("DIADENA:", diadema_marca_id, diadema_serial);
+
+    const acta = await ActaService.updateActa(
+      id,
+      payload,
+      diadema_marca_id,
+      diadema_serial
+    );
 
     if (!acta) {
       return res.status(404).json({
-        message: 'Acta no encontrada o ya cerrada',
+        message: "Acta no encontrada o ya cerrada",
       });
     }
 
     res.json(acta);
   } catch (error: any) {
     console.error(error);
-    res.status(500).json({ message: 'Error actualizando el acta' });
+    res.status(500).json({ message: "Error actualizando el acta" });
   }
 };
 
@@ -105,30 +119,33 @@ export const closeActa = async (req: Request, res: Response) => {
     const id = Number(req.params.id);
 
     if (isNaN(id)) {
-      return res.status(400).json({ message: 'ID inválido' });
+      return res.status(400).json({ message: "ID inválido" });
     }
 
     const acta = await ActaService.closeActa(id);
 
     if (!acta) {
-      return res.status(404).json({ message: 'Acta no encontrada' });
+      return res.status(404).json({ message: "Acta no encontrada" });
     }
 
     res.json(acta);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: 'Error cerrando el acta' });
+    res.status(500).json({ message: "Error cerrando el acta" });
   }
 };
 
 // GET /diadema-marcas - Obtener todas las marcas de diademas
-export const getDiademaMarcasController = async (_req: Request, res: Response) => {
+export const getDiademaMarcasController = async (
+  _req: Request,
+  res: Response,
+) => {
   try {
     const marcas = await ActaService.getDiademaMarcas();
     res.json(marcas);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Error obteniendo marcas' });
+    res.status(500).json({ error: "Error obteniendo marcas" });
   }
 };
 
@@ -139,7 +156,7 @@ export const getActasController = async (req: Request, res: Response) => {
     const result = await ActaService.getActasPaginated(
       Number(page),
       Number(limit),
-      String(search)
+      String(search),
     );
 
     res.json(result);
@@ -148,5 +165,3 @@ export const getActasController = async (req: Request, res: Response) => {
     res.status(500).json({ message: "Error obteniendo actas" });
   }
 };
-
-
