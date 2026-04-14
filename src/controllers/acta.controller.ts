@@ -8,7 +8,7 @@ import { ActaPayload } from "../types/acta.types.js";
  */
 export const createActa = async (req: Request, res: Response) => {
   try {
-    const { diadema_marca_id, diadema_serial, ...payload } = req.body;
+    const { diadema_marca_id, diadema_serial, laptop_marca_id, ...payload } = req.body;
 
     const acta = await ActaService.createActa(
       payload,
@@ -83,12 +83,12 @@ export const updateActa = async (req: Request, res: Response) => {
       return res.status(400).json({ message: "ID inválido" });
     }
 
-    // 👇 AGREGA ESTO
+
     console.log("BODY COMPLETO:", req.body);
 
     const { diadema_marca_id, diadema_serial, ...payload } = req.body;
 
-    // 👇 Y ESTO
+ 
     console.log("DIADENA:", diadema_marca_id, diadema_serial);
 
     const acta = await ActaService.updateActa(
@@ -163,5 +163,19 @@ export const getActasController = async (req: Request, res: Response) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Error obteniendo actas" });
+  }
+};
+
+// GET /laptop-marcas - Obtener todas las marcas de laptops
+export const getLaptopMarcasController = async (
+  req: Request,
+  res: Response
+) => {
+   try {
+    const marcasLaptop = await ActaService.getLaptopMarcas();
+    res.json(marcasLaptop);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Error obteniendo marcas" });
   }
 };

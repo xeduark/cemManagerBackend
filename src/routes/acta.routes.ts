@@ -7,12 +7,27 @@ import {
   closeActa,
   getLatestActasController,
   getDiademaMarcasController,
+  getLaptopMarcasController
 } from '../controllers/acta.controller.js';
+import { getLaptopMarcas } from '../services/acta.service.js';
 
 const router = Router();
 
+// llamar actas
+router.get('/laptop-marcas', getLaptopMarcasController);
 /**
- * Crear acta (BORRADOR)
+ * 🔥 Obtener marcas de diademas para dropdown en el frontend
+ */
+router.get('/diadema-marcas', getDiademaMarcasController);
+/**
+ * 🔥 SOLO últimas N actas (rápido)
+ */
+router.get('/latest', getLatestActasController);
+
+
+
+/**
+ * Crear acta 
  */
 router.post('/', createActa);
 
@@ -21,15 +36,7 @@ router.post('/', createActa);
  */
 router.get('/', getActasController);
 
-/**
- * 🔥 SOLO últimas N actas (rápido)
- */
-router.get('/latest', getLatestActasController);
 
-/**
- * Otros endpoints
- */
-router.get('/diadema-marcas', getDiademaMarcasController);
 
 /**
  * Obtener acta por ID (SIEMPRE AL FINAL)
@@ -45,5 +52,6 @@ router.put('/:id', updateActa);
  * Cerrar acta
  */
 router.post('/:id/close', closeActa);
+
 
 export default router;

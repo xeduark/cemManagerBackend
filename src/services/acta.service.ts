@@ -11,15 +11,18 @@ export interface ActaDB {
   closed_at: string | null;
 }
 
+
+
 /**
  * Crear una nueva acta
  */
 export const createActa = async (
+
   payload: ActaPayload,
   diademaMarcaId?: number,
-  diademaSerial?: string
+  diademaSerial?: string,
+  laptopMarcaId?: number,
 ): Promise<ActaDB> => {
-
   //  validar correctamente la marca de diadema si se proporciona (para evitar referencias a marcas inexistentes)
   if (diademaMarcaId) {
     const marca = await getDiademaMarcaById(diademaMarcaId);
@@ -29,6 +32,16 @@ export const createActa = async (
     }
   }
 
+  if (laptopMarcaId) {
+    const marcaLaptop = await getLaptopMarcaById(laptopMarcaId); 
+    
+    if (!marcaLaptop) {
+      throw new Error("La marca de laptop no existe");
+    }
+
+  }
+
+
   const result = await pool.query(
     `
     INSERT INTO actas (
@@ -36,18 +49,21 @@ export const createActa = async (
       payload,
       estado,
       diadema_marca_id,
-      diadema_serial
+      diadema_serial,
+      laptop_marca_id
+
     )
     VALUES (
       'ACT-' || LPAD(nextval('acta_number_seq')::text, 4, '0'),
       $1,
       'BORRADOR',
       $2,
-      $3
+      $3,
+      $4
     )
     RETURNING *
     `,
-    [payload, diademaMarcaId, diademaSerial]
+    [payload, diademaMarcaId, diademaSerial, laptopMarcaId],
   );
 
   return result.rows[0];
@@ -76,16 +92,27 @@ export const updateActa = async (
   id: number,
   payload: ActaPayload,
   diademaMarcaId?: number,
-  diademaSerial?: string
+  diademaSerial?: string,
+  laptopMarcaId?: number,
 ): Promise<ActaDB | null> => {
 
   if (diademaMarcaId) {
     const marca = await getDiademaMarcaById(diademaMarcaId);
 
     if (!marca) {
-      throw new Error('La marca de diadema no existe');
+      throw new Error("La marca de diadema no existe");
     }
   }
+
+  if (laptopMarcaId) {
+    const marcaLaptop = await getLaptopMarcaById(laptopMarcaId);
+    
+    if (!marcaLaptop) {
+      throw new Error("La marca de laptop no existe");
+    }
+
+  }
+
 
   const result = await pool.query(
     `
@@ -93,12 +120,14 @@ export const updateActa = async (
     SET payload = $1,
         diadema_marca_id = $2,
         diadema_serial = $3,
+        laptop_marca_id = $4,
+
         updated_at = NOW()
-    WHERE id = $4
+    WHERE id = $5
       AND estado = 'BORRADOR'
     RETURNING *
     `,
-    [payload, diademaMarcaId, diademaSerial, id]
+    [payload, diademaMarcaId, diademaSerial, laptopMarcaId, id],
   );
 
   return result.rows[0] ?? null;
@@ -135,6 +164,8 @@ export const getAllActas = async () => {
   return result.rows;
 };
 
+
+
 // Obtener las últimas N actas (para dashboard) pero permitir un límite dinámico vía query param
 export const getLatestActas = async (limit: number = 10) => {
   const result = await pool.query(
@@ -160,11 +191,32 @@ export const getDiademaMarcaById = async (id: number) => {
   return result.rows[0] ?? null;
 };
 
+// Obtener marca de laptop por ID (para mostrar en el acta)
+export const getLaptopMarcaById = async (id: number) => {
+  const result = await pool.query(
+    `SELECT * FROM laptop_marcas WHERE id = $1`,
+    [id]
+  );
+
+  return result.rows[0] ?? null;
+};
+
 // Obtener todas las marcas de diademas (para dropdown en el frontend)
 export const getDiademaMarcas = async () => {
   const result = await pool.query(`
     SELECT id, nombre
     FROM diadema_marcas
+    ORDER BY nombre
+  `);
+
+  return result.rows;
+};
+
+// Obtener todas las marcas de laptops (para dropdown en el frontend)
+export const getLaptopMarcas = async () => {
+  const result = await pool.query(`
+    SELECT id, nombre
+    FROM laptop_marcas
     ORDER BY nombre
   `);
 

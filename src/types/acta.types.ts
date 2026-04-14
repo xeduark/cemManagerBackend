@@ -20,6 +20,7 @@ export interface Acta {
 
   diadema_serial?: string;
   diadema_marca_id?: number;
+  laptop_marca_id?: number;
 
   created_at: string;
   updated_at: string;
