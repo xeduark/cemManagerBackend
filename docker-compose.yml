@@ -4,15 +4,15 @@ services:
     container_name: acta_db
     restart: always
     environment:
-      POSTGRES_DB: acta_manager
-      POSTGRES_USER: adminCEM2026
-      POSTGRES_PASSWORD: cem2024*
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U adminCEM2026 -d acta_manager"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
       interval: 5s
       timeout: 5s
       retries: 5

@@ -1,32 +1,36 @@
-export interface Acta {
+import { CelularPayload } from './operador.types.js';
+
+export interface ActaPayload {
   id: number;
   acta_number: string; // ACT-0001, ACT-0002, etc.
   fecha: string;
 
-  nombre: string;
-  cargo: string;
-  sede: string;
+  cargoId: number;
+  sedeId: number;
+
   equipo: string;
-  marca: string;
+  laptop_marca_id?: number;
+  laptopSerial: string;
+
   accesorios: string;
   estado: string;
   observaciones: string;
 
-  recibido_por_nombre: string;
-  recibido_por_cc: string;
-  entregado_por_nombre: string;
-  entregado_por_cc: string;
-  visto_bueno: string;
+  recibidoPorNombre: string;
+  recibidoPorCC: string;
+
+  entregadoPorNombre: string;
+  entregadoPorCC: string;
+
+  vistoBueno: string;
 
   diadema_serial?: string;
   diadema_marca_id?: number;
-  laptop_marca_id?: number;
 
   created_at: string;
   updated_at: string;
+  closed_at: string | null;
+
+  celular?: CelularPayload | null;
 }
 
-export type ActaPayload = Omit<
-  Acta,
-  'id' | 'acta_number' | 'created_at' | 'updated_at'
->;

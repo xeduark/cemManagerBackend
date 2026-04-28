@@ -1,23 +1,24 @@
-import { query, Request, Response } from "express";
-import { pool } from "../db.js";
+import { Request, Response } from "express";
 import * as ActaService from "../services/acta.service.js";
-import { ActaPayload } from "../types/acta.types.js";
 
 /**
- * Crear una nueva acta (BORRADOR)
+ * Crear una nueva acta
  */
 export const createActa = async (req: Request, res: Response) => {
   try {
-    const { diadema_marca_id, diadema_serial, laptop_marca_id, ...payload } = req.body;
+    console.log("📥 BODY QUE LLEGA DEL FRONT:");
+    console.log(req.body);
+    const { diademaMarcaId, diademaSerial, laptopMarcaId, ...data } = req.body;
 
     const acta = await ActaService.createActa(
-      payload,
-      diadema_marca_id,
-      diadema_serial,
+      data,
+      diademaMarcaId,
+      diademaSerial,
+      laptopMarcaId,
     );
 
     res.status(201).json(acta);
-  } catch (error: any) {
+  } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Error creando el acta" });
   }
@@ -30,26 +31,28 @@ export const getActas = async (_req: Request, res: Response) => {
   try {
     const actas = await ActaService.getAllActas();
     res.json(actas);
-  } catch (error: any) {
+  } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Error obteniendo actas" });
   }
 };
 
-// GET /actas/latest - Obtener las últimas N actas (ordenadas por fecha)
+/**
+ * Obtener últimas actas
+ */
 export const getLatestActasController = async (req: Request, res: Response) => {
   try {
     const limit = Number(req.query.limit) || 10;
     const actas = await ActaService.getLatestActas(limit);
     res.json(actas);
-  } catch (error: any) {
+  } catch (error) {
     console.error(error);
-    res.status(500).json({ error: "Error obteniendo últimas actas" });
+    res.status(500).json({ message: "Error obteniendo últimas actas" });
   }
 };
 
 /**
- * Obtener acta por ID (previsualización / edición)
+ * Obtener acta por ID
  */
 export const getActaById = async (req: Request, res: Response) => {
   try {
@@ -66,14 +69,14 @@ export const getActaById = async (req: Request, res: Response) => {
     }
 
     res.json(acta);
-  } catch (error: any) {
+  } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Error obteniendo el acta" });
   }
 };
 
 /**
- * Actualizar acta (solo si está en BORRADOR)
+ * Actualizar acta
  */
 export const updateActa = async (req: Request, res: Response) => {
   try {
@@ -83,19 +86,22 @@ export const updateActa = async (req: Request, res: Response) => {
       return res.status(400).json({ message: "ID inválido" });
     }
 
+    console.log("📥 BODY UPDATE:");
+    console.log(req.body);
 
-    console.log("BODY COMPLETO:", req.body);
-
-    const { diadema_marca_id, diadema_serial, ...payload } = req.body;
-
- 
-    console.log("DIADENA:", diadema_marca_id, diadema_serial);
+    const {
+      diademaMarcaId,
+      diademaSerial,
+      laptopMarcaId,
+      ...data
+    } = req.body;
 
     const acta = await ActaService.updateActa(
       id,
-      payload,
-      diadema_marca_id,
-      diadema_serial
+      data,
+      diademaMarcaId,
+      diademaSerial,
+      laptopMarcaId
     );
 
     if (!acta) {
@@ -105,14 +111,15 @@ export const updateActa = async (req: Request, res: Response) => {
     }
 
     res.json(acta);
-  } catch (error: any) {
+  } catch (error) {
+    console.error("❌ ERROR UPDATE ACTA:");
     console.error(error);
     res.status(500).json({ message: "Error actualizando el acta" });
   }
 };
 
 /**
- * Cerrar acta (ya no editable)
+ * Cerrar acta
  */
 export const closeActa = async (req: Request, res: Response) => {
   try {
@@ -135,7 +142,9 @@ export const closeActa = async (req: Request, res: Response) => {
   }
 };
 
-// GET /diadema-marcas - Obtener todas las marcas de diademas
+/**
+ * Marcas de diademas
+ */
 export const getDiademaMarcasController = async (
   _req: Request,
   res: Response,
@@ -145,10 +154,29 @@ export const getDiademaMarcasController = async (
     res.json(marcas);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: "Error obteniendo marcas" });
+    res.status(500).json({ message: "Error obteniendo marcas" });
   }
 };
 
+/**
+ * Marcas de laptops
+ */
+export const getLaptopMarcasController = async (
+  _req: Request,
+  res: Response,
+) => {
+  try {
+    const marcas = await ActaService.getLaptopMarcas();
+    res.json(marcas);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Error obteniendo marcas" });
+  }
+};
+
+/**
+ * Actas paginadas
+ */
 export const getActasController = async (req: Request, res: Response) => {
   try {
     const { page = 1, limit = 10, search = "" } = req.query;
@@ -163,19 +191,5 @@ export const getActasController = async (req: Request, res: Response) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Error obteniendo actas" });
-  }
-};
-
-// GET /laptop-marcas - Obtener todas las marcas de laptops
-export const getLaptopMarcasController = async (
-  req: Request,
-  res: Response
-) => {
-   try {
-    const marcasLaptop = await ActaService.getLaptopMarcas();
-    res.json(marcasLaptop);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Error obteniendo marcas" });
   }
 };

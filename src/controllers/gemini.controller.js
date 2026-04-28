@@ -1,4 +1,4 @@
-import axios from "axios"
+|import axios from "axios"
 
 export const generarActa = async (req, res) => {
   const { prompt } = req.body
