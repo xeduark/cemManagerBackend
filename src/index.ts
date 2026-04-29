@@ -6,6 +6,7 @@ import userRoutes from "./routes/user.routes.js";
 import cargosRoutes from "./routes/jobTitle.routes.js";
 import sedesRoutes from "./routes/sedes.routes.js";
 import operadorRoutes from "./routes/operador.routes.js";
+import firmaRoutes from "./routes/firma.routes.js";
 import swaggerUi from "swagger-ui-express";
 import { swaggerSpec } from "./docs/swagger.js";
 import listEndpoints from "express-list-endpoints";
@@ -27,6 +28,7 @@ app.use("/api/users", userRoutes); // Rutas para usuarios
 app.use("/api/cargos", cargosRoutes); // Rutas para cargos
 app.use("/api/sedes", sedesRoutes); // Rutas para sedes
 app.use("/api/operadores", operadorRoutes); // Rutas para operadores
+app.use("/api/firmas", firmaRoutes); // Rutas para firmas
 app.use("/api/docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec)); // Documentación Swagger en /api/docs
 
 app.get("/", (_req, res) => {

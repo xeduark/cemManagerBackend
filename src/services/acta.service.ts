@@ -25,6 +25,16 @@ export interface ActaDB {
   closed_at: string | null;
 }
 
+export interface ActaWithCelular extends ActaDB {
+  celular?: {
+    numero: string;
+    imei: string;
+    marca_id: number;
+    modelo: string;
+    operador_id: number;
+  } | null;
+}
+
 /**
  * Crear una nueva acta
  */
@@ -33,8 +43,7 @@ export const createActa = async (
   diademaMarcaId?: number,
   diademaSerial?: string,
   laptopMarcaId?: number,
-): Promise<ActaDB> => {
-
+): Promise<ActaWithCelular | null> => {
   if (diademaMarcaId) {
     const marca = await getDiademaMarcaById(diademaMarcaId);
     if (!marca) throw new Error("La marca de diadema no existe");
@@ -89,29 +98,75 @@ export const createActa = async (
       data.vistoBueno,
       diademaSerial ?? null,
       diademaMarcaId ?? null,
-    ]
+    ],
   );
 
-   const acta = result.rows[0];
+  const acta = result.rows[0];
 
   if (data.celular) {
     console.log("CELULAR RECIBIDO:", data.celular);
+    await pool.query(
+      `
+    INSERT INTO celulares (
+      acta_id,
+      numero,
+      imei,
+      marca_id,
+      modelo,
+      operador_id
+    )
+    VALUES ($1,$2,$3,$4,$5,$6)
+    `,
+      [
+        acta.id,
+        data.celular.numero,
+        data.celular.imei,
+        data.celular.marca_id,
+        data.celular.modelo,
+        data.celular.operador_id,
+      ],
+    );
   }
 
-
-  return result.rows[0];
+  return await getActaById(acta.id);
 };
 
 /**
  * Obtener un acta por ID
  */
-export const getActaById = async (id: number): Promise<ActaDB | null> => {
+export const getActaById = async (
+  id: number
+): Promise<ActaWithCelular | null> => {
   const result = await pool.query(
-    `SELECT * FROM actas WHERE id = $1`,
-    [id]
+    `SELECT
+    a.*,
+    c.numero AS celular_numero,
+    c.imei AS celular_imei,
+    c.marca_id AS celular_marca_id,
+    c.modelo AS celular_modelo,
+    c.operador_id AS celular_operador_id
+  FROM actas a
+  LEFT JOIN celulares c ON c.acta_id = a.id
+  WHERE a.id = $1`,
+    [id],
   );
 
-  return result.rows[0] ?? null;
+  const row = result.rows[0];
+
+  if (!row) return null;
+
+  return {
+    ...row,
+    celular: row.celular_numero
+      ? {
+          numero: row.celular_numero,
+          imei: row.celular_imei,
+          marca_id: row.celular_marca_id,
+          modelo: row.celular_modelo,
+          operador_id: row.celular_operador_id,
+        }
+      : null,
+  };
 };
 
 /**
@@ -123,8 +178,7 @@ export const updateActa = async (
   diademaMarcaId?: number,
   diademaSerial?: string,
   laptopMarcaId?: number,
-): Promise<ActaDB | null> => {
-
+): Promise<ActaWithCelular | null> => {
   if (diademaMarcaId) {
     const marca = await getDiademaMarcaById(diademaMarcaId);
     if (!marca) throw new Error("La marca de diadema no existe");
@@ -176,17 +230,38 @@ export const updateActa = async (
       diademaSerial ?? null,
       diademaMarcaId ?? null,
       id,
-    ]
+    ],
   );
 
-   const acta = result.rows[0];
+  const acta = result.rows[0];
 
   if (data.celular) {
-    console.log("CELULAR RECIBIDO:", data.celular);
+    await pool.query(`DELETE FROM celulares WHERE acta_id = $1`, [id]);
+
+    await pool.query(
+      `
+    INSERT INTO celulares (
+      acta_id,
+      numero,
+      imei,
+      marca_id,
+      modelo,
+      operador_id
+    )
+    VALUES ($1,$2,$3,$4,$5,$6)
+    `,
+      [
+        id,
+        data.celular.numero,
+        data.celular.imei,
+        data.celular.marca_id,
+        data.celular.modelo,
+        data.celular.operador_id,
+      ],
+    );
   }
 
-
-  return result.rows[0] ?? null;
+  return await getActaById(id);
 };
 
 /**
@@ -201,7 +276,7 @@ export const closeActa = async (id: number): Promise<ActaDB | null> => {
     WHERE id = $1
     RETURNING *
     `,
-    [id]
+    [id],
   );
 
   return result.rows[0] ?? null;
@@ -229,7 +304,7 @@ export const getLatestActas = async (limit: number = 10) => {
     ORDER BY created_at DESC
     LIMIT $1
     `,
-    [limit]
+    [limit],
   );
 
   return result.rows;
@@ -241,17 +316,16 @@ export const getLatestActas = async (limit: number = 10) => {
 export const getDiademaMarcaById = async (id: number) => {
   const result = await pool.query(
     `SELECT * FROM diadema_marcas WHERE id = $1`,
-    [id]
+    [id],
   );
 
   return result.rows[0] ?? null;
 };
 
 export const getLaptopMarcaById = async (id: number) => {
-  const result = await pool.query(
-    `SELECT * FROM laptop_marcas WHERE id = $1`,
-    [id]
-  );
+  const result = await pool.query(`SELECT * FROM laptop_marcas WHERE id = $1`, [
+    id,
+  ]);
 
   return result.rows[0] ?? null;
 };

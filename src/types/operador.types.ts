@@ -1,6 +1,7 @@
 export interface CelularPayload {
   numero: string;
   imei: string;
-  marca: string;
+  marca_id: number;
+  modelo: string;
   operador_id: number;
 }
