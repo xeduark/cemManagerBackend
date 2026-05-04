@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import * as ActaService from "../services/acta.service.js";
+import * as CatalogosService from "../services/catalogos.service.js";
 
 /**
  * Crear una nueva acta
@@ -89,19 +90,14 @@ export const updateActa = async (req: Request, res: Response) => {
     console.log("📥 BODY UPDATE:");
     console.log(req.body);
 
-    const {
-      diademaMarcaId,
-      diademaSerial,
-      laptopMarcaId,
-      ...data
-    } = req.body;
+    const { diademaMarcaId, diademaSerial, laptopMarcaId, ...data } = req.body;
 
     const acta = await ActaService.updateActa(
       id,
       data,
       diademaMarcaId,
       diademaSerial,
-      laptopMarcaId
+      laptopMarcaId,
     );
 
     if (!acta) {
@@ -150,7 +146,7 @@ export const getDiademaMarcasController = async (
   res: Response,
 ) => {
   try {
-    const marcas = await ActaService.getDiademaMarcas();
+    const marcas = await CatalogosService.getDiademaMarcas();
     res.json(marcas);
   } catch (error) {
     console.error(error);
@@ -166,10 +162,24 @@ export const getLaptopMarcasController = async (
   res: Response,
 ) => {
   try {
-    const marcas = await ActaService.getLaptopMarcas();
+    const marcas = await CatalogosService.getLaptopMarcas();
     res.json(marcas);
   } catch (error) {
     console.error(error);
+    res.status(500).json({ message: "Error obteniendo marcas" });
+  }
+};
+
+// Marcas de celulares
+export const getCelularMarcasController = async  (
+  _req: Request,
+  res: Response,
+) => {
+  try {
+    const marcas = await CatalogosService.getCelularMarcas();
+    res.json(marcas);
+  } catch (error) {
+    console.error("❌ ERROR CELULAR MARCAS:", error);
     res.status(500).json({ message: "Error obteniendo marcas" });
   }
 };

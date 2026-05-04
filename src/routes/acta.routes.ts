@@ -7,24 +7,26 @@ import {
   closeActa,
   getLatestActasController,
   getDiademaMarcasController,
-  getLaptopMarcasController
+  getLaptopMarcasController,
+  getCelularMarcasController
 } from '../controllers/acta.controller.js';
-import { getLaptopMarcas } from '../services/acta.service.js';
 
 const router = Router();
 
-// llamar actas
+// llamar a marcas para dropdowns en el frontend
 router.get('/laptop-marcas', getLaptopMarcasController);
 /**
  * 🔥 Obtener marcas de diademas para dropdown en el frontend
  */
 router.get('/diadema-marcas', getDiademaMarcasController);
 /**
+ * 🔥 Obtener marcas de celulares 
+ */
+router.get('/celular-marcas', getCelularMarcasController);
+/**
  * 🔥 SOLO últimas N actas (rápido)
  */
 router.get('/latest', getLatestActasController);
-
-
 
 /**
  * Crear acta 
