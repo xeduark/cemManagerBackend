@@ -9,10 +9,7 @@ import {
   validateLaptop,
 } from "./laptop.service.js";
 
-import {
-  insertCelular,
-  deleteCelularByActa,
-} from "./celular.service.js";
+import { insertCelular, deleteCelularByActa } from "./celular.service.js";
 
 /* ======================================================
    TYPES
@@ -36,7 +33,7 @@ export interface ActaDB {
   visto_bueno: string;
   diadema_serial?: string;
   diadema_marca_id?: number;
-  estado: "BORRADOR" | "CERRADA";
+  estado: "ABIERTA" | "CERRADA";
   created_at: string;
   updated_at: string;
   closed_at: string | null;
@@ -60,9 +57,8 @@ export const createActa = async (
   data: ActaPayload,
   diademaMarcaId?: number,
   diademaSerial?: string,
-  laptopMarcaId?: number
+  laptopMarcaId?: number,
 ): Promise<ActaWithCelular | null> => {
-
   const client = await pool.connect();
 
   try {
@@ -92,8 +88,7 @@ export const createActa = async (
       )
       VALUES (
         'ACT-' || LPAD(nextval('acta_number_seq')::text, 4, '0'),
-        $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,
-        'BORRADOR'
+        $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16
       )
       RETURNING *
       `,
@@ -113,13 +108,14 @@ export const createActa = async (
         data.vistoBueno,
         diademaSerial ?? null,
         diademaMarcaId ?? null,
-      ]
+        data.estado ?? "ABIERTA",
+      ],
     );
 
     const acta = result.rows[0];
 
     // 🔹 2. celular
-    if (data.celular) {
+    if (data.celular && data.celular.numero) {
       await insertCelular(client, acta.id, data.celular);
     }
 
@@ -136,7 +132,6 @@ export const createActa = async (
     await client.query("COMMIT");
 
     return await getActaById(acta.id);
-
   } catch (error) {
     await client.query("ROLLBACK");
     throw error;
@@ -150,23 +145,56 @@ export const createActa = async (
 ====================================================== */
 
 export const getActaById = async (
-  id: number
+  id: number,
 ): Promise<ActaWithCelular | null> => {
-
   const result = await pool.query(
     `
     SELECT
       a.*,
-      c.numero AS celular_numero,
-      c.imei AS celular_imei,
-      c.marca_id AS celular_marca_id,
-      c.modelo AS celular_modelo,
-      c.operador_id AS celular_operador_id
+
+      -- 🔥 CARGO Y SEDE
+      cg.nombre AS cargo,
+      s.nombre AS sede,
+
+      -- 🔥 CELULAR
+      ce.numero AS celular_numero,
+      ce.imei AS celular_imei,
+      ce.marca_id AS celular_marca_id,
+      ce.modelo AS celular_modelo,
+      ce.operador_id AS celular_operador_id,
+
+      -- 🔥 NOMBRES
+      cm.nombre AS celular_marca_nombre,
+      op.nombre AS celular_operador_nombre,
+      dm.nombre AS diadema_marca_nombre,
+      lm.nombre AS laptop_marca_nombre
+
     FROM actas a
-    LEFT JOIN celulares c ON c.acta_id = a.id
+
+    LEFT JOIN cargos cg
+      ON cg.id = a.cargo_id
+
+    LEFT JOIN sedes s
+      ON s.id = a.sede_id
+
+    LEFT JOIN laptop_marcas lm
+      ON lm.id = a.laptop_marca_id
+
+    LEFT JOIN celulares ce
+      ON ce.acta_id = a.id
+
+    LEFT JOIN celular_marcas cm
+      ON cm.id = ce.marca_id
+
+    LEFT JOIN operadores op
+      ON op.id = ce.operador_id
+
+    LEFT JOIN diadema_marcas dm 
+      ON dm.id = a.diadema_marca_id
+
     WHERE a.id = $1
     `,
-    [id]
+    [id],
   );
 
   const row = result.rows[0];
@@ -195,9 +223,8 @@ export const updateActa = async (
   data: ActaPayload,
   diademaMarcaId?: number,
   diademaSerial?: string,
-  laptopMarcaId?: number
+  laptopMarcaId?: number,
 ): Promise<ActaWithCelular | null> => {
-
   const client = await pool.connect();
 
   try {
@@ -222,9 +249,10 @@ export const updateActa = async (
         visto_bueno = $13,
         diadema_serial = $14,
         diadema_marca_id = $15,
+        estado = $16,
         updated_at = NOW()
-      WHERE id = $16
-        AND estado = 'BORRADOR'
+      WHERE id = $17
+        AND estado = 'ABIERTA'
       RETURNING *
       `,
       [
@@ -243,8 +271,9 @@ export const updateActa = async (
         data.vistoBueno,
         diademaSerial ?? null,
         diademaMarcaId ?? null,
+        data.estado,
         id,
-      ]
+      ],
     );
 
     const acta = result.rows[0];
@@ -262,12 +291,11 @@ export const updateActa = async (
 
     // 🔹 laptop
     if (data.laptopSerial) {
-
       await releaseLaptopsFromActa(client, id);
 
       await client.query(
         `DELETE FROM acta_equipos WHERE acta_id = $1 AND tipo = 'laptop'`,
-        [id]
+        [id],
       );
 
       const laptop = await getLaptopBySerial(client, data.laptopSerial);
@@ -281,7 +309,6 @@ export const updateActa = async (
     await client.query("COMMIT");
 
     return await getActaById(id);
-
   } catch (error) {
     await client.query("ROLLBACK");
     throw error;
@@ -295,7 +322,6 @@ export const updateActa = async (
 ====================================================== */
 
 export const closeActa = async (id: number): Promise<ActaDB | null> => {
-
   const client = await pool.connect();
 
   try {
@@ -309,7 +335,7 @@ export const closeActa = async (id: number): Promise<ActaDB | null> => {
       WHERE id = $1
       RETURNING *
       `,
-      [id]
+      [id],
     );
 
     await releaseLaptopsFromActa(client, id);
@@ -317,7 +343,6 @@ export const closeActa = async (id: number): Promise<ActaDB | null> => {
     await client.query("COMMIT");
 
     return result.rows[0] ?? null;
-
   } catch (error) {
     await client.query("ROLLBACK");
     throw error;
@@ -346,7 +371,7 @@ export const getLatestActas = async (limit: number = 10) => {
     ORDER BY created_at DESC
     LIMIT $1
     `,
-    [limit]
+    [limit],
   );
 
   return result.rows;
@@ -359,9 +384,8 @@ export const getLatestActas = async (limit: number = 10) => {
 export const getActasPaginated = async (
   page: number = 1,
   limit: number = 10,
-  search: string = ""
+  search: string = "",
 ) => {
-
   const offset = (page - 1) * limit;
   const searchQuery = `%${search}%`;
 
@@ -377,7 +401,7 @@ export const getActasPaginated = async (
     ORDER BY created_at DESC
     LIMIT $2 OFFSET $3
     `,
-    [searchQuery, limit, offset]
+    [searchQuery, limit, offset],
   );
 
   const total = await pool.query(
@@ -390,7 +414,7 @@ export const getActasPaginated = async (
         recibido_por_nombre ILIKE $1
       )
     `,
-    [searchQuery]
+    [searchQuery],
   );
 
   return {
@@ -400,4 +424,20 @@ export const getActasPaginated = async (
     limit,
     totalPages: Math.ceil(Number(total.rows[0].count) / limit),
   };
+};
+
+//ESTADOS DE ACTA
+export const updateEstadoActa = async (
+  id: number,
+  estado: "ABIERTA" | "CERRADA",
+) => {
+  const result = await pool.query(
+    `UPDATE actas 
+     SET estado = $1, updated_at = NOW() 
+     WHERE id = $2 
+     RETURNING *`,
+    [estado, id],
+  );
+
+  return result.rows[0] ?? null;
 };

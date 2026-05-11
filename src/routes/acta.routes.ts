@@ -8,7 +8,8 @@ import {
   getLatestActasController,
   getDiademaMarcasController,
   getLaptopMarcasController,
-  getCelularMarcasController
+  getCelularMarcasController,
+  updateEstadoActa
 } from '../controllers/acta.controller.js';
 
 const router = Router();
@@ -39,7 +40,6 @@ router.post('/', createActa);
 router.get('/', getActasController);
 
 
-
 /**
  * Obtener acta por ID (SIEMPRE AL FINAL)
  */
@@ -54,6 +54,11 @@ router.put('/:id', updateActa);
  * Cerrar acta
  */
 router.post('/:id/close', closeActa);
+
+/**
+ * Actualizar estado de acta
+ */
+router.patch("/actas/:id/estado", updateEstadoActa);
 
 
 export default router;

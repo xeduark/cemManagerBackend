@@ -4,17 +4,24 @@ import { pool } from "../db.js";
 
 export const uploadFirma = async (req: Request, res: Response) => {
   try {
-    const file = req.file;
+    const {
+      firma,
+      acta_id,
+      tipo,
+      nombre,
+      documento,
+      usuario_id,
+    } = req.body;
 
-    if (!file) {
-      return res.status(400).json({ message: "No se envió archivo" });
+    if (!firma) {
+      return res.status(400).json({
+        message: "No se envió firma",
+      });
     }
 
-    const result: any = await uploadSignature(file.buffer);
+    const result: any = await uploadSignature(firma);
 
-    const { acta_id, tipo, nombre, documento, usuario_id } = req.body;
-
-    const firma = await pool.query(
+    const firmaGuardada = await pool.query(
       `
       INSERT INTO acta_firmas (
         acta_id,
@@ -45,10 +52,13 @@ export const uploadFirma = async (req: Request, res: Response) => {
 
     res.json({
       message: "Firma subida correctamente",
-      firma: firma.rows[0],
+      firma: firmaGuardada.rows[0],
     });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: "Error subiendo firma" });
+
+    res.status(500).json({
+      message: "Error subiendo firma",
+    });
   }
 };

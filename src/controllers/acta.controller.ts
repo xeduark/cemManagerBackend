@@ -203,3 +203,31 @@ export const getActasController = async (req: Request, res: Response) => {
     res.status(500).json({ message: "Error obteniendo actas" });
   }
 };
+
+/**
+ * Actualizar estado de acta
+ */
+export const updateEstadoActa = async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { estado } = req.body;
+
+  try {
+    if (!["ABIERTA", "CERRADA"].includes(estado)) {
+      return res.status(400).json({ message: "Estado inválido" });
+    }
+
+    const acta = await ActaService.updateEstadoActa(
+      Number(id),
+      estado
+    );
+
+    if (!acta) {
+      return res.status(404).json({ message: "Acta no encontrada" });
+    }
+
+    res.json(acta);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Error actualizando estado" });
+  }
+};

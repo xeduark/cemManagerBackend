@@ -14,6 +14,9 @@ export const insertCelular = async (
     operador_id: number;
   }
 ) => {
+  console.log("🚀 INSERTANDO CELULAR:");
+console.log("ACTA ID:", actaId);
+console.log("DATA CELULAR:", celular);
   await client.query(
     `
     INSERT INTO celulares (
