@@ -594,3 +594,9 @@ Ejemplo:
 -Sistema de firmas digitales
 
 ✅ Backend Acta Manager listo para escalar
+
+## Contacto
+
+**Jorge Eduardo Muñoz Quintero**\
+*Desarrollador principal*\
+Eduard.munoz@comitedeestudiosmedicos.com | xeduark@gmail.com
