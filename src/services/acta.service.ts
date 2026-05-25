@@ -384,37 +384,40 @@ export const getLatestActas = async (limit: number = 10) => {
 export const getActasPaginated = async (
   page: number = 1,
   limit: number = 10,
-  search: string = "",
+  estado?: "ABIERTA" | "CERRADA",
 ) => {
   const offset = (page - 1) * limit;
-  const searchQuery = `%${search}%`;
 
-  const data = await pool.query(
-    `
+  let query = `
     SELECT *
     FROM actas
-    WHERE 
-      ($1 = '' OR 
-        acta_number::text ILIKE $1 OR
-        recibido_por_nombre ILIKE $1
-      )
-    ORDER BY created_at DESC
-    LIMIT $2 OFFSET $3
-    `,
-    [searchQuery, limit, offset],
-  );
+  `;
+
+  const values: any[] = [];
+  const filters: string[] = [];
+
+  if (estado) {
+    values.push(estado);
+    filters.push(`estado = $${values.length}`);
+  }
+
+  if (filters.length) {
+    query += ` WHERE ` + filters.join(" AND ");
+  }
+
+  query += ` ORDER BY created_at DESC LIMIT $${values.length + 1} OFFSET $${values.length + 2}`;
+
+  values.push(limit, offset);
+
+  const data = await pool.query(query, values);
 
   const total = await pool.query(
     `
     SELECT COUNT(*)
     FROM actas
-    WHERE 
-      ($1 = '' OR 
-        acta_number::text ILIKE $1 OR
-        recibido_por_nombre ILIKE $1
-      )
+    ${filters.length ? `WHERE ${filters.join(" AND ")}` : ""}
     `,
-    [searchQuery],
+    filters.length ? [estado] : [],
   );
 
   return {

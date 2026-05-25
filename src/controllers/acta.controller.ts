@@ -171,7 +171,7 @@ export const getLaptopMarcasController = async (
 };
 
 // Marcas de celulares
-export const getCelularMarcasController = async  (
+export const getCelularMarcasController = async (
   _req: Request,
   res: Response,
 ) => {
@@ -189,12 +189,15 @@ export const getCelularMarcasController = async  (
  */
 export const getActasController = async (req: Request, res: Response) => {
   try {
-    const { page = 1, limit = 10, search = "" } = req.query;
+    const { page = 1, limit = 10, estado } = req.query;
+
+    const estadoValido =
+      estado === "ABIERTA" || estado === "CERRADA" ? estado : undefined;
 
     const result = await ActaService.getActasPaginated(
       Number(page),
       Number(limit),
-      String(search),
+      estadoValido,
     );
 
     res.json(result);
@@ -216,10 +219,7 @@ export const updateEstadoActa = async (req: Request, res: Response) => {
       return res.status(400).json({ message: "Estado inválido" });
     }
 
-    const acta = await ActaService.updateEstadoActa(
-      Number(id),
-      estado
-    );
+    const acta = await ActaService.updateEstadoActa(Number(id), estado);
 
     if (!acta) {
       return res.status(404).json({ message: "Acta no encontrada" });
