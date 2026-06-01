@@ -1,4 +1,4 @@
-import { pool } from "../db.js";
+import { pool } from "../config/db.js";
 import { SedeResponse } from "../types/sedes.types.js";
 
 export const getActiveSedes = async (): Promise<SedeResponse[]> => {

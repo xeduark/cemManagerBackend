@@ -1,4 +1,4 @@
-import { pool } from '../db.js';
+import { pool } from '../config/db.js';
 import { CargoResponse } from '../types/jobTitle.types.js';
 
 export const getActiveCargos = async (): Promise<CargoResponse[]> => {

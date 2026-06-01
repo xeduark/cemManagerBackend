@@ -6,3 +6,5 @@ build/
 backup.sql
 .dockerignore
 Dockerfile
+pnpm-lock.yaml
+pnpm-workspace.yaml

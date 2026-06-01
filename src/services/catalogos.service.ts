@@ -1,4 +1,4 @@
-import { pool } from "../db.js";
+import { pool } from "../config/db.js";
 
 /// 🔹 servicio de marcas
 export const getLaptopMarcas = async () => {
