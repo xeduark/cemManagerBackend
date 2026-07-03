@@ -21,11 +21,14 @@ dotenv.config();
 export const app: Application = express();
 const PORT = process.env.PORT || 4000;
 
+const allowedOrigins = [
+  process.env.FRONTEND_URL,
+  process.env.FRONTEND_URL_VITE,
+].filter(Boolean) as string[];
+
 app.use(
   cors({
-    origin:
-      "http://localhost:5173",
-
+    origin: allowedOrigins,
     credentials: true,
   }),
 );

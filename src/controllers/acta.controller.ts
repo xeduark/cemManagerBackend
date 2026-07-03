@@ -185,11 +185,11 @@ export const getCelularMarcasController = async (
 };
 
 /**
- * Actas paginadas
+ * Actas paginadas Y SEARCH
  */
 export const getActasController = async (req: Request, res: Response) => {
   try {
-    const { page = 1, limit = 10, estado } = req.query;
+    const { page = 1, limit = 10, estado, search = " ", } = req.query;
 
     const estadoValido =
       estado === "ABIERTA" || estado === "CERRADA" ? estado : undefined;
@@ -198,6 +198,7 @@ export const getActasController = async (req: Request, res: Response) => {
       Number(page),
       Number(limit),
       estadoValido,
+      String(search),
     );
 
     res.json(result);

@@ -71,6 +71,7 @@ export const createActa = async (
         acta_number,
         fecha,
         cargo_id,
+        cargo_especificacion,
         sede_id,
         equipo,
         laptop_serial,
@@ -88,27 +89,28 @@ export const createActa = async (
       )
       VALUES (
         'ACT-' || LPAD(nextval('acta_number_seq')::text, 4, '0'),
-        $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16
+        $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17
       )
       RETURNING *
       `,
       [
-        data.fecha,
-        data.cargoId,
-        data.sedeId,
-        data.equipo,
-        data.laptopSerial,
-        laptopMarcaId ?? null,
-        data.accesorios,
-        data.observaciones,
-        data.recibidoPorNombre,
-        data.recibidoPorCC,
-        data.entregadoPorNombre ?? null,
-        data.entregadoPorCC ?? null,
-        data.vistoBueno,
-        diademaSerial ?? null,
-        diademaMarcaId ?? null,
-        data.estado ?? "ABIERTA",
+        data.fecha,                        // $1
+        data.cargoId,                      // $2
+        data.cargoEspecificacion ?? null,  // $3
+        data.sedeId,                       // $4
+        data.equipo,                       // $5
+        data.laptopSerial,                 // $6
+        laptopMarcaId ?? null,             // $7
+        data.accesorios,                   // $8
+        data.observaciones,                // $9
+        data.recibidoPorNombre,            // $10
+        data.recibidoPorCC,                // $11
+        data.entregadoPorNombre ?? null,   // $12
+        data.entregadoPorCC ?? null,       // $13
+        data.vistoBueno,                   // $14
+        diademaSerial ?? null,             // $15
+        diademaMarcaId ?? null,            // $16
+        data.estado ?? "ABIERTA",          // $17
       ],
     );
 
@@ -200,8 +202,10 @@ export const getActaById = async (
   const row = result.rows[0];
   if (!row) return null;
 
+  // ✅ Mapear cargo_especificacion a cargoEspecificacion
   return {
     ...row,
+    cargoEspecificacion: row.cargo_especificacion,
     celular: row.celular_numero
       ? {
           numero: row.celular_numero,
@@ -236,28 +240,30 @@ export const updateActa = async (
       SET
         fecha = $1,
         cargo_id = $2,
-        sede_id = $3,
-        equipo = $4,
-        laptop_serial = $5,
-        laptop_marca_id = $6,
-        accesorios = $7,
-        observaciones = $8,
-        recibido_por_nombre = $9,
-        recibido_por_cc = $10,
-        entregado_por_nombre = $11,
-        entregado_por_cc = $12,
-        visto_bueno = $13,
-        diadema_serial = $14,
-        diadema_marca_id = $15,
-        estado = $16,
+        cargo_especificacion = $3,
+        sede_id = $4,
+        equipo = $5,
+        laptop_serial = $6,
+        laptop_marca_id = $7,
+        accesorios = $8,
+        observaciones = $9,
+        recibido_por_nombre = $10,
+        recibido_por_cc = $11,
+        entregado_por_nombre = $12,
+        entregado_por_cc = $13,
+        visto_bueno = $14,
+        diadema_serial = $15,
+        diadema_marca_id = $16,
+        estado = $17,
         updated_at = NOW()
-      WHERE id = $17
+      WHERE id = $18
         AND estado = 'ABIERTA'
       RETURNING *
       `,
       [
         data.fecha,
         data.cargoId,
+        data.cargoEspecificacion ?? null, 
         data.sedeId,
         data.equipo,
         data.laptopSerial,
@@ -378,13 +384,14 @@ export const getLatestActas = async (limit: number = 10) => {
 };
 
 /* ======================================================
-   PAGINATED
+   PAGINATED y SEARCH
 ====================================================== */
 
 export const getActasPaginated = async (
   page: number = 1,
   limit: number = 10,
   estado?: "ABIERTA" | "CERRADA",
+  search?: string,
 ) => {
   const offset = (page - 1) * limit;
 
@@ -396,28 +403,52 @@ export const getActasPaginated = async (
   const values: any[] = [];
   const filters: string[] = [];
 
+  // FILTRO ESTADO
   if (estado) {
     values.push(estado);
     filters.push(`estado = $${values.length}`);
   }
 
-  if (filters.length) {
-    query += ` WHERE ` + filters.join(" AND ");
+  // FILTRO BÚSQUEDA (NOMBRE O CÉDULA)
+  if (search?.trim()) {
+    values.push(`%${search.trim()}%`);
+
+    filters.push(`
+      (
+        LOWER(recibido_por_nombre) LIKE LOWER($${values.length})
+        OR CAST(recibido_por_cc AS TEXT) LIKE $${values.length}
+      )
+    `);
   }
 
-  query += ` ORDER BY created_at DESC LIMIT $${values.length + 1} OFFSET $${values.length + 2}`;
+  // WHERE
+  if (filters.length) {
+    query += ` WHERE ${filters.join(" AND ")}`;
+  }
+
+  // Guardamos los valores SOLO para el COUNT
+  const countValues = [...values];
+
+  // Paginación
+  query += `
+    ORDER BY created_at DESC
+    LIMIT $${values.length + 1}
+    OFFSET $${values.length + 2}
+  `;
 
   values.push(limit, offset);
 
+  // Datos
   const data = await pool.query(query, values);
 
+  // Total registros
   const total = await pool.query(
     `
-    SELECT COUNT(*)
-    FROM actas
-    ${filters.length ? `WHERE ${filters.join(" AND ")}` : ""}
+      SELECT COUNT(*)
+      FROM actas
+      ${filters.length ? `WHERE ${filters.join(" AND ")}` : ""}
     `,
-    filters.length ? [estado] : [],
+    countValues,
   );
 
   return {

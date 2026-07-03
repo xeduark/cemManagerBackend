@@ -6,6 +6,7 @@ export interface ActaPayload {
   fecha: string;
 
   cargoId: number;
+  cargoEspecificacion?: string;
   sedeId: number;
 
   equipo: string;
