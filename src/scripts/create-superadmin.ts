@@ -3,6 +3,7 @@ import "dotenv/config";
 import * as bcrypt from "bcrypt";
 
 import { pool } from "../config/db.js";
+import { UserRole } from "../types/auth.js";
 
 const createSuperAdmin =
   async () => {
@@ -28,7 +29,7 @@ const createSuperAdmin =
           "Super Administrador",
           "admin@cem.com",
           passwordHash,
-          "superadmin",
+          UserRole.SUPERADMIN,
           true,
         ],
       );

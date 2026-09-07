@@ -11,54 +11,65 @@ import {
   getCelularMarcasController,
   updateEstadoActa
 } from '../controllers/acta.controller.js';
+import { saveFirmaController } from '../controllers/firma.controller.js';
+import { authenticate } from '../middlewares/auth.middleware.js';
+import { authorize } from '../middlewares/role.middleware.js';
+import { UserRole } from '../types/auth.js';
 
 const router = Router();
 
+const canWrite = [authenticate, authorize(UserRole.SUPERADMIN, UserRole.ADMIN)];
+
 // llamar a marcas para dropdowns en el frontend
-router.get('/laptop-marcas', getLaptopMarcasController);
+router.get('/laptop-marcas', authenticate, getLaptopMarcasController);
 /**
  * 🔥 Obtener marcas de diademas para dropdown en el frontend
  */
-router.get('/diadema-marcas', getDiademaMarcasController);
+router.get('/diadema-marcas', authenticate, getDiademaMarcasController);
 /**
- * 🔥 Obtener marcas de celulares 
+ * 🔥 Obtener marcas de celulares
  */
-router.get('/celular-marcas', getCelularMarcasController);
+router.get('/celular-marcas', authenticate, getCelularMarcasController);
 /**
  * 🔥 SOLO últimas N actas (rápido)
  */
-router.get('/latest', getLatestActasController);
+router.get('/latest', authenticate, getLatestActasController);
 
 /**
- * Crear acta 
+ * Crear acta
  */
-router.post('/', createActa);
+router.post('/', ...canWrite, createActa);
 
 /**
  * 🔥 PRINCIPAL → paginación + search + limit
  */
-router.get('/', getActasController);
+router.get('/', authenticate, getActasController);
 
 
 /**
  * Obtener acta por ID (SIEMPRE AL FINAL)
  */
-router.get('/:id', getActaById);
+router.get('/:id', authenticate, getActaById);
 
 /**
  * Actualizar acta (solo BORRADOR)
  */
-router.put('/:id', updateActa);
+router.put('/:id', ...canWrite, updateActa);
 
 /**
  * Cerrar acta
  */
-router.post('/:id/close', closeActa);
+router.post('/:id/close', ...canWrite, closeActa);
 
 /**
  * Actualizar estado de acta
  */
-router.patch("/actas/:id/estado", updateEstadoActa);
+router.patch("/:id/estado", ...canWrite, updateEstadoActa);
+
+/**
+ * Guardar firma (panel TOPAZ)
+ */
+router.post('/:id/firma', ...canWrite, saveFirmaController);
 
 
 export default router;

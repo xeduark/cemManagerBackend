@@ -169,7 +169,17 @@ export const getActaById = async (
       cm.nombre AS celular_marca_nombre,
       op.nombre AS celular_operador_nombre,
       dm.nombre AS diadema_marca_nombre,
-      lm.nombre AS laptop_marca_nombre
+      lm.nombre AS laptop_marca_nombre,
+
+      -- 🔥 FIRMAS (panel TOPAZ)
+      fr.firma_base64 AS firma_recibe_base64,
+      fr.firmante_nombre AS firma_recibe_nombre,
+      fr.firmante_cc AS firma_recibe_cc,
+      fr.capturada_en AS firma_recibe_capturada_en,
+      fe.firma_base64 AS firma_entrega_base64,
+      fe.firmante_nombre AS firma_entrega_nombre,
+      fe.firmante_cc AS firma_entrega_cc,
+      fe.capturada_en AS firma_entrega_capturada_en
 
     FROM actas a
 
@@ -191,8 +201,14 @@ export const getActaById = async (
     LEFT JOIN operadores op
       ON op.id = ce.operador_id
 
-    LEFT JOIN diadema_marcas dm 
+    LEFT JOIN diadema_marcas dm
       ON dm.id = a.diadema_marca_id
+
+    LEFT JOIN acta_firmas fr
+      ON fr.acta_id = a.id AND fr.tipo = 'RECIBE'
+
+    LEFT JOIN acta_firmas fe
+      ON fe.acta_id = a.id AND fe.tipo = 'ENTREGA'
 
     WHERE a.id = $1
     `,
@@ -213,6 +229,22 @@ export const getActaById = async (
           marca_id: row.celular_marca_id,
           modelo: row.celular_modelo,
           operador_id: row.celular_operador_id,
+        }
+      : null,
+    firmaRecibe: row.firma_recibe_base64
+      ? {
+          base64: row.firma_recibe_base64,
+          firmanteNombre: row.firma_recibe_nombre,
+          firmanteCC: row.firma_recibe_cc,
+          capturadaEn: row.firma_recibe_capturada_en,
+        }
+      : null,
+    firmaEntrega: row.firma_entrega_base64
+      ? {
+          base64: row.firma_entrega_base64,
+          firmanteNombre: row.firma_entrega_nombre,
+          firmanteCC: row.firma_entrega_cc,
+          capturadaEn: row.firma_entrega_capturada_en,
         }
       : null,
   };

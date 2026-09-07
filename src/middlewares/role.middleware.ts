@@ -24,7 +24,7 @@ export const authorize =
 
     if (
       !roles.includes(
-        user.role as UserRole,
+        user.role?.toUpperCase() as UserRole,
       )
     ) {
       return res.status(403).json({

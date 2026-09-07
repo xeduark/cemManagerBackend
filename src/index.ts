@@ -1,6 +1,6 @@
+import "dotenv/config";
 import express, { Application } from "express";
 import cors from "cors";
-import dotenv from "dotenv";
 import actaRoutes from "./routes/acta.routes.js";
 import userRoutes from "./routes/user.routes.js";
 import cargosRoutes from "./routes/jobTitle.routes.js";
@@ -11,11 +11,10 @@ import { swaggerSpec } from "./docs/swagger.js";
 import listEndpoints from "express-list-endpoints";
 import cookieParser from "cookie-parser";
 import authRoutes from "./modules/auth/auth.routes.js";
+import analyticsRoutes from "./routes/analytics.routes.js";
 
 //import para pruebas de bd
 import { pool } from "./config/db.js";
-
-dotenv.config();
 
 //const app: Application = express();
 export const app: Application = express();
@@ -42,6 +41,7 @@ app.use("/api/cargos", cargosRoutes); // Rutas para cargos
 app.use("/api/sedes", sedesRoutes); // Rutas para sedes
 app.use("/api/operadores", operadorRoutes); // Rutas para operadores
 app.use("/api/auth", authRoutes); // Rutas para autenticación
+app.use("/api/analytics", analyticsRoutes); // Rutas para analítica
 app.use("/api/docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec)); // Documentación Swagger en /api/docs
 
 app.get("/", (_req, res) => {
