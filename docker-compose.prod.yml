@@ -1,0 +1,65 @@
+services:
+  db:
+    image: postgres:16
+    container_name: acta_db
+    restart: unless-stopped
+
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+
+    # Sin "ports" publicados: solo la red interna de Docker puede hablarle a la BD.
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build: .
+    container_name: acta_backend
+    restart: unless-stopped
+
+    # Sin bind-mount del código ni "command": usa lo que el Dockerfile ya compiló
+    # (npm run build -> dist/) y su CMD ["node", "dist/index.js"].
+
+    env_file:
+      - .env
+
+    environment:
+      DB_HOST: db
+      NODE_ENV: production
+
+    # Sin "ports" publicados: solo el proxy le habla por la red interna.
+
+    depends_on:
+      db:
+        condition: service_healthy
+
+  proxy:
+    image: caddy:2-alpine
+    container_name: acta_proxy
+    restart: unless-stopped
+
+    ports:
+      - "80:80"
+      - "443:443"
+
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+
+    depends_on:
+      - api
+
+volumes:
+  postgres_data:
+    external: true
+    name: actamanagerbackend_postgres_data
+  caddy_data:
+  caddy_config:

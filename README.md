@@ -1,602 +1,280 @@
 # Acta Manager Backend
 
-Backend para la generación y gestión de actas, construido con **Node.js + Express + TypeScript** usando módulos **ESM (NodeNext)**.
+Backend para la gestión de actas de entrega de equipos, construido con **Node.js + Express 5 + TypeScript** (ESM/NodeNext), **PostgreSQL** (vía `pg`, sin ORM) y **Docker**.
+
+---
+
+## Stack
+
+- Express 5 + TypeScript (NodeNext)
+- PostgreSQL 16 (contenedor Docker), consultas SQL directas con `pg`
+- JWT (access + refresh token vía cookie httpOnly) para autenticación
+- Swagger (`swagger-jsdoc` + `swagger-ui-express`) en `/api/docs`
+- Vitest + Supertest para pruebas
+- Docker Compose para desarrollo y producción
 
 ---
 
 ## Requisitos
 
-- Node.js **v18+** (recomendado v20+)
-- npm
+- Node.js v20+
+- Docker Desktop
+- Un archivo `.env` en la raíz (ver más abajo)
 
 ---
 
-## Instalación
-
-Clonar el repositorio:
-
-```bash
-git clone <https://github.com/xeduark/cemManagerBackend.git>
-cd cemManagerBackend
-```
-
-Instalar dependencias:
-
-```bash
-npm install
-```
-
----
-
-## Variables de entorno
-
-Crear un archivo `.env` en la raíz:
-
-```env
-PORT=4000
-```
-
----
-
-## Estructura del proyecto
-
-```text
-actaManagerBackend/
-│
-├─ src/
-│  ├─ index.ts
-│  ├─ routes/
-│  │  └─ acta.routes.ts
-│  ├─ controllers/
-│  │  └─ acta.controller.ts
-│  ├─ services/
-│  │  └─ acta.service.ts
-│  └─ utils/
-│     └─ helpers.ts
-│
-├─ dist/                # Se genera automáticamente
-│
-├─ .env
-├─ package.json
-├─ tsconfig.json
-└─ README.md
-```
-
-## 📘 Documentación de la API (Swagger)
-
-Este backend utiliza **Swagger (OpenAPI)** para documentar los endpoints y permitir pruebas desde el navegador.
-
----
-
-### 📦 Dependencias instaladas
-
-```bash
-npm install swagger-ui-express swagger-jsdoc
-npm install -D @types/swagger-jsdoc
-```
-
----
-
-### 📁 Configuración básica
-
-Se configuró Swagger usando `swagger-jsdoc` y `swagger-ui-express` para generar documentación automáticamente a partir de comentarios en el código.
-
-La documentación está disponible en:
-
-```
-http://localhost:4000/api/docs
-```
-
----
-
-### 🧩 Uso en el servidor
-
-Swagger se monta como middleware de Express y expone una interfaz HTML interactiva.
-
-Permite:
-- Ver todos los endpoints
-- Ver métodos HTTP
-- Ver parámetros y respuestas
-- Probar endpoints con **Try it out**
-
----
-
-### ✍️ Cómo documentar un endpoint
-
-Los endpoints se documentan usando comentarios especiales en las rutas.
-
-Ejemplo:
-
-```ts
-/**
- * @swagger
- * /api/actas:
- *   get:
- *     summary: Obtener todas las actas
- *     tags: [Actas]
- *     responses:
- *       200:
- *         description: Lista de actas
- */
-```
-
-Swagger detecta estos comentarios y los muestra automáticamente en la UI.
-
----
-
-### 🧪 Pruebas con Postman
-
-Swagger permite copiar directamente los endpoints o exportar la colección para Postman, facilitando las pruebas del API.
-
----
-
-
----
-
-## Scripts disponibles
-
-### Desarrollo (sin generar dist)
-
-```bash
-npm run dev
-```
-
-Usa **ts-node-dev** para recargar automáticamente.
-
----
-
-### Build (generar carpeta dist)
-
-# Paso 7 – Instalación de dependencias para Base de Datos (PostgreSQL + Docker)
-
-Este paso prepara el backend para conectarse a una base de datos PostgreSQL que será ejecutada dentro de Docker.
-
----
-
-## 1. Requisitos previos
-
-- Node.js instalado
-- Docker instalado
-- Proyecto backend en TypeScript funcionando (`npm run dev` o `npm run build`)
-
----
-
-## 2. Instalación del driver de PostgreSQL
-
-Desde la raíz del backend (`actaManagerBackend`):
-
-```bash
-npm install pg
-```
-
-### ¿Para qué sirve?
-`pg` es el cliente oficial de PostgreSQL para Node.js y permite ejecutar consultas SQL desde el backend.
-
----
-
-## 3. Tipos para TypeScript
-
-Como el proyecto usa TypeScript, es obligatorio instalar los tipos:
-
-```bash
-npm install -D @types/pg
-```
-
-Esto evita errores de compilación y mejora el autocompletado.
-
----
-
-## 4. Crear el archivo de conexión a la base de datos
-
-📁 **src/db.ts**
-
-```ts
-import pkg from 'pg';
-const { Pool } = pkg;
-
-export const pool = new Pool({
-  host: process.env.DB_HOST,
-  port: Number(process.env.DB_PORT),
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME,
-});
-```
-
-⚠️ **Importante**
-- No usar `localhost`
-- En Docker, el `host` debe ser el nombre del servicio (ej: `db`)
-
----
-
-## 5. Variables de entorno necesarias
-
-📁 **.env**
+## Variables de entorno (`.env`)
 
 ```env
 PORT=4000
 
-DB_HOST=
-DB_PORT=
-DB_NAME=
-DB_USER=
-DB_PASSWORD=
-```
+# PostgreSQL
+DB_HOST=localhost        # dentro de Docker Compose se sobreescribe a "db"
+DB_PORT=5432
+DB_NAME=acta_manager
+DB_USER=...
+DB_PASSWORD=...
 
-Estas variables serán usadas tanto por Docker como por el backend.
+# JWT
+JWT_ACCESS_SECRET=...
+JWT_REFRESH_SECRET=...
+ACCESS_TOKEN_EXPIRES=15m
+REFRESH_TOKEN_EXPIRES=7d
 
----
+# CORS (orígenes del frontend)
+FRONTEND_URL=http://localhost:3000
+FRONTEND_URL_VITE=http://localhost:3000   # el frontend corre en el puerto 3000, no 5173
 
-## 6. Probar la conexión a la base de datos
+# Google Workspace SSO (opcional; si no se define, /api/auth/google responde error controlado)
+GOOGLE_CLIENT_ID=...
+# Lista separada por comas de dominios de correo permitidos para SSO
+GOOGLE_WORKSPACE_DOMAINS=menteplena.com.co,comitedeestudiosmedicos.com
 
-En `src/index.ts`, agregar temporalmente:
-
-```ts
-import { pool } from './db.js';
-
-pool.query('SELECT NOW()')
-  .then(() => console.log('✅ DB conectada correctamente'))
-  .catch(err => console.error('❌ Error conectando DB', err));
-```
-
-Si aparece el mensaje `DB conectada correctamente`, la configuración es correcta.
-
----
-
-## 7. Buenas prácticas (Docker mindset)
-
-- ❌ No usar `localhost` para la base de datos
-- ❌ No conectar a DB sin Docker
-- ❌ No hardcodear credenciales
-- ✅ Usar variables de entorno
-- ✅ Usar `docker-compose` para la red interna
-
----
-
-## 8. Resultado esperado
-
-Al finalizar este paso, el proyecto:
-
-- Tiene instalado el cliente PostgreSQL
-- Puede conectarse a una DB usando variables de entorno
-- Está listo para ser dockerizado completamente
-
----
-
-## Próximo paso
-
-👉 Crear y levantar los contenedores con `docker-compose`  
-👉 Definir la tabla `actas` en PostgreSQL
-
-
-
-⚠️ **Ejecutar**
-
-- Tener docker en **Engine Running**
-- el archivo .env y el docker -composer.yml deben tener las mismas credenciales.
-
-- ejecutar estos comandos para lanzar el backend con docker.
-- detener docker
-```bash
-docker compose down
-```
-```bash
-docker compose up --build
+# SMTP (opcional). Sin configurar, los correos de firma remota se simulan
+# en el log del servidor en vez de enviarse — útil para probar en local.
+SMTP_HOST=
+SMTP_PORT=587
+SMTP_SECURE=false
+SMTP_USER=
+SMTP_PASS=
+SMTP_FROM=
 ```
 
 ---
-- ejecutar estos comandos para conocer tablas y nombre del docker con consola.
+
+## Desarrollo local (Docker)
 
 ```bash
-docker ps -a
+docker volume create actamanagerbackend_postgres_data   # una sola vez
+docker compose up -d --build
 ```
 
----
-```bash
-docker exec -it NOMBRE DEL DOCKER psql -U USUARIO -d BASE DE DATOS
-```
+Esto levanta `acta_db` (Postgres) y `acta_backend` (API en modo `npm run dev`, con recarga en caliente vía bind-mount). La API queda en `http://localhost:4000`.
 
----
+> **Nota Windows/Docker Desktop**: la recarga en caliente (`tsx watch`) a veces no detecta cambios de archivos por el bind-mount. Si el contenedor no refleja tu último cambio, o si instalaste una dependencia nueva, hay que reconstruir:
+> ```bash
+> docker compose rm -f -s -v api
+> docker compose up -d --build api
+> ```
+> (el `-v` es importante: el volumen anónimo de `node_modules` no se refresca solo con `--build`).
 
-Cuando salga acta_manager-#
-```bash
-\dt
-```
-
----
-
-
-⚠️ **Este paso es obligatorio antes de usar `npm start`**
+Comandos útiles:
 
 ```bash
-npm run build
+docker ps -a                                              # ver contenedores
+docker logs -f acta_backend                                # logs en vivo
+docker exec -it acta_db psql -U <DB_USER> -d <DB_NAME>      # entrar a psql
 ```
 
-Esto ejecuta:
+Dentro de `psql`: `\dt` lista las tablas, `\d nombre_tabla` describe una tabla.
 
-```bash
-tsc
-```
-
-Y genera:
-
-```text
-dist/
-├─ index.js
-├─ routes/
-├─ controllers/
-├─ services/
-└─ utils/
-```
-
----
-
-### Producción
-
-Después del build:
-
-```bash
-npm start
-```
-
-Ejecuta:
-
-```bash
-node dist/index.js
-```
-
----
-
-## TypeScript + NodeNext (importante)
-
-Este proyecto usa:
-
-```json
-{
-  "module": "NodeNext",
-  "moduleResolution": "NodeNext"
-}
-```
-
-Reglas clave:
-- Todo el código fuente vive en `src`
-- **Nunca** se importa `.ts` en runtime
-- Node ejecuta **solo lo que está en `dist`**
-- Siempre correr `npm run build` antes de `npm start`
-
----
-
-## API Endpoints
-
-### Crear acta
-
-```http
-POST /api/actas
-```
-
-Body (ejemplo):
-
-```json
-{
-  "nombre": "Juan Pérez",
-  "cargo": "Ingeniero",
-  "sede": "Bogotá",
-  "equipo": "Laptop",
-  "marca": "Dell"
-}
-```
-
----
-
-### Listar actas
-
-```http
-GET /api/actas
-```
-
----
-
-### Obtener acta por número
-
-```http
-GET /api/actas/:actaNumber
-```
-
----
-
-## Flujo recomendado
+### Sin Docker
 
 ```bash
 npm install
-npm run dev        # desarrollo
-npm run build      # generar dist
-npm start          # producción
+npm run build   # compila src/ -> dist/
+npm start       # node dist/index.js
+
+npm run dev     # o, para desarrollo: tsx watch src/index.ts
+npm test        # vitest
 ```
 
 ---
 
-## Notas finales
+## Roles y permisos (RBAC)
 
-- La carpeta `dist` **no se versiona**
-- TypeScript solo vive en `src`
-- El backend está listo para integrarse con frontend React/Vite
+Tres roles: `SUPERADMIN`, `ADMIN`, `LECTOR`.
+
+| Acción | LECTOR | ADMIN | SUPERADMIN |
+|---|---|---|---|
+| Leer actas, catálogos, analítica | ✅ | ✅ | ✅ |
+| Crear/editar/cerrar actas, firmar | ❌ | ✅ | ✅ |
+| Gestionar usuarios (`/api/users`) | ❌ | ❌ | ✅ |
+| Resolver solicitudes de cambio de contraseña | ❌ | ❌ | ✅ |
+| Editar configuración general (`/api/settings`) | ❌ | ❌ | ✅ |
+
+Toda ruta (salvo `POST /api/auth/login`, `POST /api/auth/google` y `POST /api/auth/solicitar-cambio-password`) requiere `Authorization: Bearer <accessToken>`.
+
+**Nota de datos**: los roles en la base de datos están guardados como texto libre en minúscula (`"admin"`, `"superadmin"`, `"viewer"`) tal como se crearon originalmente — el middleware normaliza a mayúsculas al comparar, pero el valor `"viewer"` no se ha renombrado a `"lector"` en la BD. Es una decisión de negocio pendiente, no un bug.
 
 ---
-## Notas adicionales
 
-- Ver la `db`
+## Autenticación
+
+- **Login normal**: `POST /api/auth/login` `{ email, password, rememberMe? }` → `{ accessToken, mustChangePassword, user }` + cookie `refreshToken`.
+- **Login con Google Workspace SSO**: `POST /api/auth/google` `{ idToken, rememberMe? }`. Verifica el ID token contra Google (`google-auth-library`, sin necesidad de client secret), valida que el dominio del correo esté en `GOOGLE_WORKSPACE_DOMAINS`, y **solo autentica usuarios que ya existen** en la tabla `users` — no crea cuentas nuevas. Pensado para el personal de sistemas/IT.
+- **Renovar sesión**: `POST /api/auth/refresh` (sin body, usa la cookie `refreshToken`) → `{ accessToken, user }`, rota el `refreshToken`. El `accessToken` dura `ACCESS_TOKEN_EXPIRES` (15 min por defecto) — **el frontend tiene que llamar este endpoint antes de que expire (o al recibir un 401), si no, el usuario ve la sesión "cerrarse" cada 15 minutos** aunque tenga una cookie de sesión válida por días. `rememberMe: true` en el login extiende la cookie/el refresh token a `REFRESH_TOKEN_EXPIRES_REMEMBER` (30 días por defecto) en vez de `REFRESH_TOKEN_EXPIRES` (7 días); ese valor se conserva automáticamente en cada renovación posterior, sin tener que volver a mandar `rememberMe`.
+- **Cambio de contraseña (autenticado)**: `POST /api/auth/change-password` `{ currentPassword, newPassword }`.
+- **"Olvidé mi contraseña"** (público, con rate limit de 5 intentos / 15 min por IP): `POST /api/auth/solicitar-cambio-password` `{ email, nombreCompleto, motivo }` con `motivo` en `OLVIDO | CAMBIO_REGULAR | CUENTA_COMPROMETIDA`. No resetea nada automáticamente — crea una solicitud que un `SUPERADMIN` revisa (`GET /api/auth/solicitudes-cambio-password`) y resuelve (`POST /api/auth/solicitudes-cambio-password/:id/resolver`), lo que genera una contraseña temporal aleatoria y marca `must_change_password = true` para esa cuenta.
+- **`mustChangePassword`**: cuando el login devuelve `true`, el frontend debe bloquear la navegación hasta que el usuario cambie su contraseña. Se usa tanto para las contraseñas temporales generadas por sistemas como para las cuentas creadas en la importación histórica (contraseña inicial = cédula sin el último dígito).
+
+---
+
+## Firma digital
+
+Tabla `acta_firmas` (una fila por `acta_id` + `tipo`, con upsert al volver a firmar):
+
+- `POST /api/actas/:id/firma` (ADMIN/SUPERADMIN) `{ tipo: "RECIBE" | "ENTREGA", firmaBase64, firmanteNombre?, firmanteCC? }`.
+- `GET /api/actas/:id` devuelve `firmaRecibe` / `firmaEntrega` (`{ base64, firmanteNombre, firmanteCC, capturadaEn }` o `null`).
+
+**Panel físico TOPAZ T-S460-HBS-R** (SDK SigWeb, integración en el frontend): el dispositivo tiene memoria interna y puede arrastrar el trazo de una firma anterior si no se limpia — el frontend debe llamar `ClearTablet()` antes de cada captura nueva.
+
+**Firma remota** (`firma_remota_solicitudes`): un enlace + código de un solo uso para firmar desde el navegador sin el panel físico. **El envío es manual, fuera del sistema** — no hay integración con ninguna API de WhatsApp; el backend genera el enlace/código y el ADMIN los copia (o hace clic en un link `wa.me` ya armado) para mandarlos él mismo por WhatsApp, o por el canal que prefiera.
+
+- `POST /api/actas/:id/firma-remota/solicitar` (ADMIN/SUPERADMIN) `{ tipo, destinatarioNombre?, destinatarioEmail?, destinatarioTelefono? }` (al menos uno de `destinatarioEmail`/`destinatarioTelefono`) — genera un código de 6 dígitos y un enlace `${FRONTEND_URL}/firmar/:token`, válidos por **24 horas**. Responde `{ link, codigo, waLink, expiraEn }` — `codigo` viaja en texto plano solo en esta respuesta (en la BD se guarda el hash), y `waLink` es un `https://wa.me/...` con el mensaje pre-armado, listo para abrir y enviar si se dio `destinatarioTelefono`. Si se dio `destinatarioEmail`, además se envía por correo (o se simula en el log si no hay SMTP) como canal adicional, no exclusivo. Crea una notificación.
+- `POST /api/firma-remota/:token/validar` (público, rate-limited) `{ codigo }` — máximo 5 intentos por token; si es válido devuelve un `firmaSessionToken` de corta duración (10 min) junto con un resumen del acta para que la persona confirme que es la correcta antes de firmar.
+- `POST /api/firma-remota/completar` (`Authorization: Bearer <firmaSessionToken>`) `{ firmaBase64 }` — guarda la firma (mismo mecanismo que `acta_firmas`, con `dispositivo = 'WEB_REMOTA'`), marca la solicitud como usada (no se puede reutilizar el enlace) y resuelve la notificación asociada.
+
+---
+
+## Notificaciones
+
+Tabla `notifications`, pensada para que el frontend muestre una campanita persistente: una notificación **no desaparece sola** — solo cuando se descarta manualmente o cuando se resuelve la acción que la generó (ej. al resolver una solicitud de cambio de contraseña, o al completarse una firma remota).
+
+- `GET /api/notifications` (autenticado) — devuelve las notificaciones `PENDIENTE` visibles para el rol del usuario (`target_role = NULL` = visibles para cualquiera, o coincide con su rol).
+- `POST /api/notifications/:id/descartar` (autenticado) — la oculta sin resolver nada (el botón de la "x").
+
+Hoy generan notificaciones: solicitudes de cambio de contraseña (visibles solo para `SUPERADMIN`) y eventos de firma remota (solicitada/completada, visibles para todos).
+
+---
+
+## Analítica
+
+Todos los endpoints son `GET`, requieren solo estar autenticado (cualquier rol, incluido `LECTOR`):
+
+| Endpoint | Devuelve |
+|---|---|
+| `/api/analytics/summary` | Totales de actas (incluye `BORRADOR`, ver nota abajo), usuarios activos, sedes/cargos/operadores |
+| `/api/analytics/actas-by-estado` | Conteo agrupado por estado |
+| `/api/analytics/actas-by-sede` | Conteo agrupado por sede |
+| `/api/analytics/actas-por-mes?months=N` | Serie temporal de actas creadas |
+| `/api/analytics/tiempo-cierre-promedio` | Promedio de días entre creación y cierre |
+| `/api/analytics/equipos` | Distribución por marca de laptop/diadema/celular |
+| `/api/analytics/usuarios-por-rol` | Conteo de usuarios por rol y estado activo |
+
+> **Nota**: existe un tercer estado de acta, `BORRADOR`, presente en la base de datos y contemplado en el diseño original (ver diagrama de tablas más abajo), pero el código actual (`ActaDB.estado`, validaciones de `updateEstadoActa`) solo modela `ABIERTA | CERRADA`. `summary.actas.abiertas + summary.actas.cerradas` puede ser menor que `summary.actas.total` por esta razón. Pendiente decidir si `BORRADOR` se formaliza en todo el sistema.
+
+---
+
+## Configuración general (`app_settings`)
+
+Tabla clave/valor genérica para datos que no deberían quedar quemados en el código ni requerir un redeploy para cambiar.
+
+- `GET /api/settings/public` — sin autenticación, solo expone las claves marcadas `is_public` (hoy: `whatsappSistemas`, el contacto que se muestra en el login para pedir acceso).
+- `GET /api/settings` / `PUT /api/settings/:key` (SUPERADMIN) — gestión completa.
+
+---
+
+## Importación histórica de actas
+
+Contexto: existían ~925-935 actas de entrega en papel/Google Docs que había que migrar al sistema. **Ya se importaron 907 actas** (ver detalle abajo); queda pendiente la creación de usuarios para el personal de sistemas identificado en ellas.
+
+**Herramientas** (en `src/scripts/`, no forman parte del servidor en ejecución):
+- `parse-actas-pdf.cjs` — extrae el texto completo del PDF fuente (`src/data/Actas de entrega para actualizar.pdf`, no versionado, tiene datos personales reales) y lo segmenta en actas individuales. **Las actas no están alineadas una por página** — muchas terminan a mitad de página y la siguiente empieza justo después — por eso el script concatena todo el documento y corta usando como ancla el bloque `Fecha de devolución: ... / Recibido por: ...`, que aparece exactamente una vez por acta. Genera `src/data/actas-parsed.json` y `src/data/actas-parse-report.md` (reporte de validación).
+- `import-actas.cjs` — lee `actas-parsed.json`, mapea `cargo`/`sede` de texto libre a los catálogos reales (`cargo_id`/`sede_id`) y hace la inserción real en una única transacción (todo o nada). Genera `src/data/actas-import-log.json`.
+
+**Resultado de la importación ya ejecutada** (907 de 935 páginas del PDF; el conteo esperado era ~925, diferencia sin resolver):
+- Mapeo de `cargo_id` (catálogo de solo 5 valores genéricos) por reglas de palabras clave sobre el texto libre — siempre se conserva el texto original completo en `cargo_especificacion`, el bucket es solo una categorización aproximada.
+- Mapeo de `sede_id` por normalización + sinónimos conocidos contra las 31 sedes reales. **117 actas (13%) no tuvieron un match confiable** y quedaron con `sede_id = SEDE EXTERNA`, con el texto original de la sede preservado al inicio de `observaciones` (ej. `[SEDE ORIGINAL: CAMPESTRE]`) para no perder el dato.
+- Los campos de marca de laptop/celular/diadema **no se separaron en catálogos** (`laptop_marca_id`, `diadema_marca_id` quedaron en `NULL`) — el texto de equipo y marca se guardó completo y legible en la columna `equipo`. Es una simplificación deliberada para esta primera carga; separarlo en catálogos reales de marcas es trabajo futuro.
+- Nombre/Cargo faltantes en el origen (no error de parseo) corresponden en su mayoría a actas de equipos enviados a una sede/bodega sin persona asignada (ej. `Nombre: APARTADO`).
+- El ranking de personas que firman como "Entregado por" (en `actas-parse-report.md`) es la base para identificar al personal de sistemas — quienes aparecen firmando en **10 o más actas** son casi con certeza personal de IT, no empleados normales entregando su propio equipo. **Pendiente crear sus cuentas `ADMIN`** (cédula real, contraseña temporal = cédula sin el último dígito, `must_change_password = true`) — bloqueado en sus correos corporativos, que aún no se han confirmado.
+
+---
+
+## Despliegue en producción
+
+`docker-compose.prod.yml` (separado del de desarrollo):
+- No monta el código fuente ni usa `npm run dev` — corre el build compilado (`CMD` del `Dockerfile`).
+- Ni Postgres ni la API exponen puertos al exterior — solo el proxy.
+- Servicio `proxy` (Caddy) en 80/443, HTTPS automático vía Let's Encrypt (`Caddyfile`, reemplazar `TU-DOMINIO.com` por el dominio real).
+
 ```bash
- docker exec -it acta_db psql -U adminCEM2026 -d acta_manager
- \d nombre_de_tu_tabla
- ```
-- TypeScript solo vive en `src`
-- El backend está listo para integrarse con frontend React/Vite
+docker volume create actamanagerbackend_postgres_data   # una sola vez
+docker compose -f docker-compose.prod.yml up -d --build
+```
+
+Requiere: un (sub)dominio con registro A apuntando a la IP del VPS, y los puertos 80/443 abiertos en el firewall (no hace falta abrir 4000 ni 5432).
+
+**Pendiente**: backups automáticos de Postgres (hoy no existen).
 
 ---
 
-# Arquitectura de Base de Datos – acta_manager
+## Migraciones
 
-## Descripción
+Los archivos en `migrations/` son SQL manuales, no hay un runner automático — se aplican a mano contra la base de datos.
 
-La base de datos **acta_manager** está diseñada para gestionar actas institucionales, usuarios del sistema, cargos organizacionales, áreas y sedes.
-
-El sistema utiliza **PostgreSQL** y sigue una estructura relacional normalizada combinada con almacenamiento flexible mediante **JSONB** para el contenido de las actas.
+| Archivo | Contenido | Estado |
+|---|---|---|
+| `001_migrate_users_to_system_users.sql` | Unificaría `users` + `system_users` en una sola tabla | **No aplicada** — choca con el modelo de dos tablas que usa el código actual. Señalada como riesgo conocido, pendiente de decisión propia. |
+| `002_add_acta_firmas.sql` | Tabla `acta_firmas` (reemplaza una tabla residual de una integración Cloudinary ya eliminada del código) | Aplicada |
+| `003_add_password_reset_and_settings.sql` | `users.must_change_password`, tabla `password_reset_requests`, tabla `app_settings` | Aplicada |
+| `004_add_notifications_and_firma_remota.sql` | Tablas `notifications` y `firma_remota_solicitudes` | Aplicada |
+| `005_add_firma_remota_telefono.sql` | `firma_remota_solicitudes.destinatario_telefono`, `destinatario_email` pasa a opcional | Aplicada |
 
 ---
 
-# Diagrama General de Relaciones
+## Estructura de la base de datos (resumen)
 
 ```text
-areas
-│
-└── cargos
-│
-└── system_users
-│
-├── sede_id
-│
-└── actas (autor / creador)
-
-sedes
-│
-└── system_users
+sedes ──┐
+        ├── system_users ── users (auth)
+cargos ─┘        │
+                  └── actas ── acta_firmas
+                         └── celulares
+laptops ── acta_equipos (genérico, hoy casi sin usar)
 ```
 
+- `actas.estado`: `ABIERTA | CERRADA` en el código actual (existe además `BORRADOR` en datos reales, ver sección de Analítica).
+- `actas.payload` (jsonb): columna presente en el esquema original pensada para contenido flexible, no usada por el código actual (los campos viven en columnas planas).
 
 ---
 
-# Tablas del Sistema
+## Notas de arquitectura
 
-## 1. sedes
-
-Almacena las sedes institucionales donde se encuentran los usuarios.
-
-| Campo | Tipo | Descripción |
-|-----|-----|-------------|
-| id | integer (PK) | Identificador único |
-| nombre | varchar(150) | Nombre de la sede |
-| direccion | text | Dirección física |
-| ciudad | varchar(100) | Ciudad |
-| codigo | varchar(10) | Código interno |
-| activo | boolean | Estado de la sede |
-| created_at | timestamp | Fecha de creación |
-
-Relación:
-
+- Sin ORM: todas las consultas son SQL directo vía `pg`.
+- ESM + NodeNext: todo el código fuente vive en `src/`, los imports usan extensión `.js` aunque el archivo sea `.ts` (requisito de NodeNext). Node solo ejecuta lo que hay en `dist/` en producción.
+- Swagger disponible en `/api/docs`.
 
 ---
 
-## 2. areas
+## Roadmap / pendientes conocidos
 
-Define las áreas o departamentos dentro de la organización.
-
-| Campo | Tipo | Descripción |
-|-----|-----|-------------|
-| id | integer (PK) | Identificador |
-| nombre | varchar(100) | Nombre del área |
-| activo | boolean | Estado |
-
-
- codigo |      nombre
---------+------------------
- 4110   | Consulta Externa
- 4111   | Proyectos
- 4115   | Hospitalización
- 5105   | Administración
-Relación:
-
+- Confirmar y completar `GOOGLE_WORKSPACE_DOMAINS` con todos los dominios reales de la organización.
+- Configurar SMTP real para que la firma remota envíe correos de verdad (hoy se simula en el log).
+- Crear las cuentas `ADMIN` del personal de sistemas identificado en la importación — bloqueado en sus correos corporativos.
+- Decidir qué hacer con `"viewer"` vs `"LECTOR"` en los datos existentes.
+- Formalizar (o descartar) el estado `BORRADOR`.
+- Revisar las 117 actas importadas con `sede_id = SEDE EXTERNA` (sede original preservada en `observaciones`) y las que quedaron con cargo/nombre en blanco.
+- Separar marcas de laptop/celular/diadema en catálogos reales para las actas importadas (hoy quedan como texto libre en `equipo`).
+- Diseñar un inventario real de equipos (hoy `laptops`/`acta_equipos` existen pero casi no se usan; no cubre celulares ni diademas como activos reusables).
+- Backups automáticos de la base de datos en producción.
+- CRUD real para catálogos (`sedes`, `cargos`, `operadores`, marcas) — hoy solo tienen lectura.
 
 ---
-
-## 3. cargos
-
-Representa los cargos organizacionales asociados a un área.
-
-| Campo | Tipo | Descripción |
-|-----|-----|-------------|
-| id | integer (PK) | Identificador |
-| nombre | varchar(100) | Nombre del cargo |
-| activo | boolean | Estado |
-| area_id | integer (FK) | Área a la que pertenece |
-
-Relación:
-
-
----
-
-## 4. system_users
-
-Contiene los usuarios registrados en el sistema.
-
-| Campo | Tipo | Descripción |
-|-----|-----|-------------|
-| id | integer (PK) | Identificador |
-| nombre | varchar(150) | Nombre del usuario |
-| dni | varchar(20) | Documento único |
-| activo | boolean | Estado del usuario |
-| created_at | timestamp | Fecha de creación |
-| sede_id | integer (FK) | Sede del usuario |
-| cargo_id | integer | Cargo del usuario |
-
-Relaciones:
-
----
-
-## 5. actas
-
-Tabla principal donde se almacenan las actas del sistema.
-
-| Campo | Tipo | Descripción |
-|-----|-----|-------------|
-| id | integer (PK) | Identificador |
-| acta_number | integer | Número único del acta |
-| payload | jsonb | Contenido del acta |
-| estado | varchar(20) | Estado del acta (BORRADOR / CERRADA) |
-| created_at | timestamp | Fecha de creación |
-| updated_at | timestamp | Fecha de actualización |
-| closed_at | timestamp | Fecha de cierre |
-
-Índices:
-
-
----
-
-# Uso de JSONB en actas
-
-El campo **payload** permite almacenar información estructurada flexible dentro del acta.
-
-Ejemplo:
-
-```json
-{
-  "titulo": "Acta reunión administrativa",
-  "fecha": "2026-02-10",
-  "asistentes": [
-    "Director",
-    "Secretaria"
-  ],
-  "temas": [
-    "Presupuesto",
-    "Planeación académica"
-  ]
-}
-
-#Posibles Mejoras Futuras
-
--Relación entre actas y usuarios (autor del acta)
-
--Índices adicionales para búsquedas en JSONB
-
--Sistema de auditoría de cambios
-
--Control de versiones de actas
-
--Sistema de firmas digitales
-
-✅ Backend Acta Manager listo para escalar
 
 ## Contacto
 
-**Jorge Eduardo Muñoz Quintero**\
-*Desarrollador principal*\
+**Jorge Eduardo Muñoz Quintero**
+*Desarrollador principal*
 Eduard.munoz@comitedeestudiosmedicos.com | xeduark@gmail.com

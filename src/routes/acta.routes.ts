@@ -12,6 +12,7 @@ import {
   updateEstadoActa
 } from '../controllers/acta.controller.js';
 import { saveFirmaController } from '../controllers/firma.controller.js';
+import { solicitarFirmaRemotaController } from '../controllers/firmaRemota.controller.js';
 import { authenticate } from '../middlewares/auth.middleware.js';
 import { authorize } from '../middlewares/role.middleware.js';
 import { UserRole } from '../types/auth.js';
@@ -70,6 +71,11 @@ router.patch("/:id/estado", ...canWrite, updateEstadoActa);
  * Guardar firma (panel TOPAZ)
  */
 router.post('/:id/firma', ...canWrite, saveFirmaController);
+
+/**
+ * Solicitar firma remota (envía código de un solo uso por correo)
+ */
+router.post('/:id/firma-remota/solicitar', ...canWrite, solicitarFirmaRemotaController);
 
 
 export default router;

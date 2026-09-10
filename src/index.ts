@@ -12,6 +12,9 @@ import listEndpoints from "express-list-endpoints";
 import cookieParser from "cookie-parser";
 import authRoutes from "./modules/auth/auth.routes.js";
 import analyticsRoutes from "./routes/analytics.routes.js";
+import settingsRoutes from "./routes/settings.routes.js";
+import notificationsRoutes from "./routes/notifications.routes.js";
+import firmaRemotaRoutes from "./routes/firmaRemota.routes.js";
 
 //import para pruebas de bd
 import { pool } from "./config/db.js";
@@ -19,6 +22,12 @@ import { pool } from "./config/db.js";
 //const app: Application = express();
 export const app: Application = express();
 const PORT = process.env.PORT || 4000;
+
+// Detrás de un reverse proxy (Caddy/Nginx en producción) hay que confiar en el
+// primer hop para que req.ip refleje la IP real del cliente (X-Forwarded-For),
+// no la del proxy — de lo contrario los rate limiters agrupan a todos los
+// usuarios bajo una sola IP.
+app.set("trust proxy", 1);
 
 const allowedOrigins = [
   process.env.FRONTEND_URL,
@@ -42,6 +51,9 @@ app.use("/api/sedes", sedesRoutes); // Rutas para sedes
 app.use("/api/operadores", operadorRoutes); // Rutas para operadores
 app.use("/api/auth", authRoutes); // Rutas para autenticación
 app.use("/api/analytics", analyticsRoutes); // Rutas para analítica
+app.use("/api/settings", settingsRoutes); // Configuración general (whatsapp sistemas, etc.)
+app.use("/api/notifications", notificationsRoutes); // Notificaciones persistentes
+app.use("/api/firma-remota", firmaRemotaRoutes); // Firma remota por código de un solo uso
 app.use("/api/docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec)); // Documentación Swagger en /api/docs
 
 app.get("/", (_req, res) => {

@@ -8,3 +8,6 @@ backup.sql
 Dockerfile
 pnpm-lock.yaml
 pnpm-workspace.yaml
+
+# Datos personales reales (cédulas, nombres) de la importación histórica de actas
+src/data/

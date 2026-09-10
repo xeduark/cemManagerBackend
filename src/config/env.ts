@@ -26,4 +26,14 @@ export const env = {
   refreshTokenExpires:
     process.env.REFRESH_TOKEN_EXPIRES ||
     "7d",
+
+  googleClientId:
+    process.env.GOOGLE_CLIENT_ID,
+
+  googleWorkspaceDomains: (
+    process.env.GOOGLE_WORKSPACE_DOMAINS || ""
+  )
+    .split(",")
+    .map((domain) => domain.trim().toLowerCase())
+    .filter(Boolean),
 };
