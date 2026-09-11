@@ -1,5 +1,7 @@
 import { Request, Response } from "express";
 import * as SettingsService from "../services/settings.service.js";
+import { logAction } from "../services/auditLog.service.js";
+import { AuthRequest } from "../middlewares/auth.middleware.js";
 
 export const getPublicSettingsController = async (_req: Request, res: Response) => {
   try {
@@ -21,7 +23,7 @@ export const getAllSettingsController = async (_req: Request, res: Response) => 
   }
 };
 
-export const upsertSettingController = async (req: Request, res: Response) => {
+export const upsertSettingController = async (req: AuthRequest, res: Response) => {
   try {
     const { key } = req.params;
     const { value, isPublic } = req.body as { value?: string; isPublic?: boolean };
@@ -31,6 +33,9 @@ export const upsertSettingController = async (req: Request, res: Response) => {
     }
 
     const setting = await SettingsService.upsertSetting(key, value, isPublic);
+
+    await logAction(req.user?.id, "ACTUALIZAR", "configuracion", "setting", key, `Actualizó la configuración "${key}"`);
+
     res.json(setting);
   } catch (error) {
     console.error("❌ Error en upsertSettingController:", error);

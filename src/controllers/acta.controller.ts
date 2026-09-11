@@ -1,11 +1,13 @@
 import { Request, Response } from "express";
 import * as ActaService from "../services/acta.service.js";
 import * as CatalogosService from "../services/catalogos.service.js";
+import { logAction } from "../services/auditLog.service.js";
+import { AuthRequest } from "../middlewares/auth.middleware.js";
 
 /**
  * Crear una nueva acta
  */
-export const createActa = async (req: Request, res: Response) => {
+export const createActa = async (req: AuthRequest, res: Response) => {
   try {
     console.log("📥 BODY QUE LLEGA DEL FRONT:");
     console.log(req.body);
@@ -16,6 +18,15 @@ export const createActa = async (req: Request, res: Response) => {
       diademaMarcaId,
       diademaSerial,
       laptopMarcaId,
+    );
+
+    await logAction(
+      req.user?.id,
+      "CREAR",
+      "actas",
+      "acta",
+      acta?.id,
+      `Creó el acta ${acta?.acta_number}`,
     );
 
     res.status(201).json(acta);
@@ -79,7 +90,7 @@ export const getActaById = async (req: Request, res: Response) => {
 /**
  * Actualizar acta
  */
-export const updateActa = async (req: Request, res: Response) => {
+export const updateActa = async (req: AuthRequest, res: Response) => {
   try {
     const id = Number(req.params.id);
 
@@ -106,6 +117,8 @@ export const updateActa = async (req: Request, res: Response) => {
       });
     }
 
+    await logAction(req.user?.id, "ACTUALIZAR", "actas", "acta", id, `Actualizó el acta ${acta.acta_number}`);
+
     res.json(acta);
   } catch (error) {
     console.error("❌ ERROR UPDATE ACTA:");
@@ -117,7 +130,7 @@ export const updateActa = async (req: Request, res: Response) => {
 /**
  * Cerrar acta
  */
-export const closeActa = async (req: Request, res: Response) => {
+export const closeActa = async (req: AuthRequest, res: Response) => {
   try {
     const id = Number(req.params.id);
 
@@ -130,6 +143,8 @@ export const closeActa = async (req: Request, res: Response) => {
     if (!acta) {
       return res.status(404).json({ message: "Acta no encontrada" });
     }
+
+    await logAction(req.user?.id, "CERRAR", "actas", "acta", id, `Cerró el acta ${acta.acta_number}`);
 
     res.json(acta);
   } catch (error) {
@@ -211,7 +226,7 @@ export const getActasController = async (req: Request, res: Response) => {
 /**
  * Actualizar estado de acta
  */
-export const updateEstadoActa = async (req: Request, res: Response) => {
+export const updateEstadoActa = async (req: AuthRequest, res: Response) => {
   const { id } = req.params;
   const { estado } = req.body;
 
@@ -225,6 +240,8 @@ export const updateEstadoActa = async (req: Request, res: Response) => {
     if (!acta) {
       return res.status(404).json({ message: "Acta no encontrada" });
     }
+
+    await logAction(req.user?.id, "CAMBIAR_ESTADO", "actas", "acta", id, `Cambió el estado del acta ${acta.acta_number} a ${estado}`);
 
     res.json(acta);
   } catch (error) {

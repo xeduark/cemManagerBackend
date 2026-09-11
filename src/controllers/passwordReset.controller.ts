@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import * as PasswordResetService from "../services/passwordReset.service.js";
+import { logAction } from "../services/auditLog.service.js";
 import { AuthRequest } from "../middlewares/auth.middleware.js";
 
 export const solicitarCambioController = async (req: Request, res: Response) => {
@@ -59,6 +60,15 @@ export const resolverSolicitudController = async (req: AuthRequest, res: Respons
     const resueltoPor = req.user!.id;
 
     const resultado = await PasswordResetService.resolverSolicitud(id, resueltoPor);
+
+    await logAction(
+      resueltoPor,
+      "RESOLVER",
+      "usuarios",
+      "solicitud_password",
+      id,
+      `Resolvió solicitud de cambio de contraseña de ${resultado.email}`,
+    );
 
     res.json({
       message: "Solicitud resuelta, comparte la contraseña temporal por un canal seguro",

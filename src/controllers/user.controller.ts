@@ -1,10 +1,12 @@
 // backend/src/controllers/user.controller.ts
 
-import { Request, Response } from 'express';
+import { Response } from 'express';
 import * as UserService from '../services/user.service.js';
+import { logAction } from '../services/auditLog.service.js';
+import { AuthRequest } from '../middlewares/auth.middleware.js';
 
 // ✅ 1. OBTENER TODOS (READ)
-export const getUsers = async (_req: Request, res: Response) => {
+export const getUsers = async (_req: AuthRequest, res: Response) => {
   try {
     console.log("📥 Backend: Solicitando todos los usuarios con JOIN...");
     const users = await UserService.getAllUsers();
@@ -16,12 +18,14 @@ export const getUsers = async (_req: Request, res: Response) => {
 };
 
 // ✅ 2. CREAR NUEVO USUARIO (CREATE)
-export const createUser = async (req: Request, res: Response) => {
+export const createUser = async (req: AuthRequest, res: Response) => {
   try {
     console.log("📥 Body recibido en createUser:", req.body);
-    
+
     const newUser = await UserService.createUser(req.body);
-    
+
+    await logAction(req.user?.id, "CREAR", "usuarios", "usuario", newUser?.[0]?.id, `Creó al usuario ${newUser?.[0]?.email}`);
+
     res.status(201).json({
       message: 'Usuario creado exitosamente',
       user: newUser
@@ -39,17 +43,19 @@ export const createUser = async (req: Request, res: Response) => {
 };
 
 // ✅ 3. ACTUALIZAR USUARIO (UPDATE)
-export const updateUser = async (req: Request, res: Response) => {
+export const updateUser = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
     console.log(`📝 Actualizando usuario con ID: ${id}`, req.body);
-    
+
     const updatedUser = await UserService.updateUser(id, req.body);
-    
+
     if (!updatedUser) {
       return res.status(404).json({ message: 'Usuario no encontrado' });
     }
-    
+
+    await logAction(req.user?.id, "ACTUALIZAR", "usuarios", "usuario", id, `Actualizó al usuario ${id}`);
+
     res.json({
       message: 'Usuario actualizado exitosamente',
       user: updatedUser
@@ -66,13 +72,15 @@ export const updateUser = async (req: Request, res: Response) => {
 };
 
 // ✅ 4. ELIMINAR USUARIO (SOFT DELETE)
-export const deleteUser = async (req: Request, res: Response) => {
+export const deleteUser = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
     console.log(`🗑️ Desactivando usuario con ID: ${id}`);
-    
+
     await UserService.deleteUser(id);
-    
+
+    await logAction(req.user?.id, "ELIMINAR", "usuarios", "usuario", id, `Desactivó al usuario ${id}`);
+
     res.json({ message: 'Usuario desactivado correctamente' });
   } catch (error) {
     console.error("❌ Error en deleteUser:", error);

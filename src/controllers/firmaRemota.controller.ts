@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import * as FirmaRemotaService from "../services/firmaRemota.service.js";
+import { logAction } from "../services/auditLog.service.js";
 import { AuthRequest } from "../middlewares/auth.middleware.js";
 
 export const solicitarFirmaRemotaController = async (req: AuthRequest, res: Response) => {
@@ -35,6 +36,15 @@ export const solicitarFirmaRemotaController = async (req: AuthRequest, res: Resp
       destinatarioTelefono,
       creadoPor: req.user!.id,
     });
+
+    await logAction(
+      req.user?.id,
+      "SOLICITAR_FIRMA_REMOTA",
+      "firmas",
+      "acta",
+      actaId,
+      `Generó enlace de firma remota (${tipo}) para ${destinatarioNombre ?? destinatarioEmail ?? destinatarioTelefono}`,
+    );
 
     res.status(201).json({
       message: "Enlace de firma remota generado",

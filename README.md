@@ -109,6 +109,8 @@ Tres roles: `SUPERADMIN`, `ADMIN`, `LECTOR`.
 |---|---|---|---|
 | Leer actas, catálogos, analítica | ✅ | ✅ | ✅ |
 | Crear/editar/cerrar actas, firmar | ❌ | ✅ | ✅ |
+| Crear/desactivar sedes (`POST`/`DELETE /api/sedes`) | ❌ | ✅ | ✅ |
+| Ver personal para selectores (`/api/personal`) | ✅ | ✅ | ✅ |
 | Gestionar usuarios (`/api/users`) | ❌ | ❌ | ✅ |
 | Resolver solicitudes de cambio de contraseña | ❌ | ❌ | ✅ |
 | Editar configuración general (`/api/settings`) | ❌ | ❌ | ✅ |
@@ -144,6 +146,16 @@ Tabla `acta_firmas` (una fila por `acta_id` + `tipo`, con upsert al volver a fir
 - `POST /api/actas/:id/firma-remota/solicitar` (ADMIN/SUPERADMIN) `{ tipo, destinatarioNombre?, destinatarioEmail?, destinatarioTelefono? }` (al menos uno de `destinatarioEmail`/`destinatarioTelefono`) — genera un código de 6 dígitos y un enlace `${FRONTEND_URL}/firmar/:token`, válidos por **24 horas**. Responde `{ link, codigo, waLink, expiraEn }` — `codigo` viaja en texto plano solo en esta respuesta (en la BD se guarda el hash), y `waLink` es un `https://wa.me/...` con el mensaje pre-armado, listo para abrir y enviar si se dio `destinatarioTelefono`. Si se dio `destinatarioEmail`, además se envía por correo (o se simula en el log si no hay SMTP) como canal adicional, no exclusivo. Crea una notificación.
 - `POST /api/firma-remota/:token/validar` (público, rate-limited) `{ codigo }` — máximo 5 intentos por token; si es válido devuelve un `firmaSessionToken` de corta duración (10 min) junto con un resumen del acta para que la persona confirme que es la correcta antes de firmar.
 - `POST /api/firma-remota/completar` (`Authorization: Bearer <firmaSessionToken>`) `{ firmaBase64 }` — guarda la firma (mismo mecanismo que `acta_firmas`, con `dispositivo = 'WEB_REMOTA'`), marca la solicitud como usada (no se puede reutilizar el enlace) y resuelve la notificación asociada.
+
+---
+
+## Auditoría (`audit_logs`)
+
+La tabla `audit_logs` **ya existía en el esquema original pero nada le escribía nunca**. Ahora sí:
+
+- `GET /api/audit-logs?page=&limit=&module=&userId=` (SUPERADMIN y ADMIN) — historial paginado, más reciente primero, con el nombre/correo de quién hizo la acción (join a `users`).
+- Se registra automáticamente en: crear/actualizar/cerrar/cambiar estado de actas, firmar (panel TOPAZ), solicitar firma remota, crear/actualizar/eliminar usuarios, crear sedes, resolver solicitudes de cambio de contraseña, y editar configuración general. Un fallo al escribir el log nunca bloquea la acción real que lo originó (solo se registra en consola).
+- No se audita el lado del firmante externo en firma remota (`/api/firma-remota/completar` es público, no hay un "admin" que auditar ahí).
 
 ---
 
@@ -231,6 +243,7 @@ Los archivos en `migrations/` son SQL manuales, no hay un runner automático —
 | `003_add_password_reset_and_settings.sql` | `users.must_change_password`, tabla `password_reset_requests`, tabla `app_settings` | Aplicada |
 | `004_add_notifications_and_firma_remota.sql` | Tablas `notifications` y `firma_remota_solicitudes` | Aplicada |
 | `005_add_firma_remota_telefono.sql` | `firma_remota_solicitudes.destinatario_telefono`, `destinatario_email` pasa a opcional | Aplicada |
+| `006_extend_audit_logs.sql` | `audit_logs` gana `entidad_tipo`/`entidad_id`/`detalle` + índices | Aplicada |
 
 ---
 

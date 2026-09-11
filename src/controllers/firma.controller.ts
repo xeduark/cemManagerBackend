@@ -1,7 +1,9 @@
-import { Request, Response } from "express";
+import { Response } from "express";
 import * as FirmaService from "../services/firma.service.js";
+import { logAction } from "../services/auditLog.service.js";
+import { AuthRequest } from "../middlewares/auth.middleware.js";
 
-export const saveFirmaController = async (req: Request, res: Response) => {
+export const saveFirmaController = async (req: AuthRequest, res: Response) => {
   try {
     const actaId = Number(req.params.id);
 
@@ -22,6 +24,8 @@ export const saveFirmaController = async (req: Request, res: Response) => {
       firmanteNombre,
       firmanteCC,
     );
+
+    await logAction(req.user?.id, "FIRMAR", "firmas", "acta", actaId, `Firma ${tipo} capturada con panel TOPAZ`);
 
     res.status(201).json(firma);
   } catch (error: any) {

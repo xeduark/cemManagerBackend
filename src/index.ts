@@ -15,6 +15,8 @@ import analyticsRoutes from "./routes/analytics.routes.js";
 import settingsRoutes from "./routes/settings.routes.js";
 import notificationsRoutes from "./routes/notifications.routes.js";
 import firmaRemotaRoutes from "./routes/firmaRemota.routes.js";
+import personalRoutes from "./routes/personal.routes.js";
+import auditLogRoutes from "./routes/auditLog.routes.js";
 
 //import para pruebas de bd
 import { pool } from "./config/db.js";
@@ -54,6 +56,8 @@ app.use("/api/analytics", analyticsRoutes); // Rutas para analítica
 app.use("/api/settings", settingsRoutes); // Configuración general (whatsapp sistemas, etc.)
 app.use("/api/notifications", notificationsRoutes); // Notificaciones persistentes
 app.use("/api/firma-remota", firmaRemotaRoutes); // Firma remota por código de un solo uso
+app.use("/api/personal", personalRoutes); // Lista liviana (nombre+cédula) para selectores de actas
+app.use("/api/audit-logs", auditLogRoutes); // Auditoría: seguimiento de acciones de SUPERADMIN/ADMIN
 app.use("/api/docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec)); // Documentación Swagger en /api/docs
 
 app.get("/", (_req, res) => {
